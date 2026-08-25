@@ -6,12 +6,12 @@ import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class DrawPig {
+public class DrawChild {
     private final int W, H;
     private final BufferedImage buf;
     private int penRGB = Color.BLACK.getRGB();
 
-    public DrawPig(int width, int height) {
+    public DrawChild(int width, int height) {
         this.W = width;
         this.H = height;
         this.buf = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
