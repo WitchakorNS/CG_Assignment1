@@ -51,38 +51,45 @@ public class GameEnter_Scene extends JPanel {
 
     // logical resolution the menu content is drawn in, then scaled onto the monitor screen
     private static final int SW = 640, SH = 360;
-    // monitor screen rectangle inside the window
-    private static final int MX = 90, MY = 30, MW = 460, MH = 260;
 
     // ============ desktop: the Angry-Birds menu on a monitor, cursor clicks PLAY -> game ============
     private void drawMenu(Graphics2D g2, float t) {
         boolean clicking = t > 0.55f && t < 0.68f;
 
-        // --- dim room + monitor bezel + stand ---
+        int mw = (int) (W * 0.8f);              // 480 when W=600
+        int mh = (int) (mw * (SH / (float) SW)); // 270 (16:9 aspect ratio)
+        int mx = (W - mw) / 2;                  // 60
+        int my = (int) (H * 0.20f);             // 120
+        int deskY = my + mh + 14 + 60;          // 464 (monitor sits cleanly on desk)
+
+        // --- dim room + desk ---
         g2.setColor(new Color(30, 30, 36));
         g2.fillRect(0, 0, W, H);
         g2.setColor(new Color(60, 45, 35));
-        g2.fillRect(0, H - 26, W, 26); // desk edge
+        g2.fillRect(0, deskY, W, H - deskY);
+        g2.setColor(new Color(45, 32, 24));
+        g2.fillRect(0, deskY, W, 6); // desk top rim shadow
 
+        // --- monitor bezel + stand ---
         g2.setColor(new Color(35, 35, 38));
-        g2.fillRoundRect(MX - 14, MY - 14, MW + 28, MH + 28, 16, 16);
-        g2.fillRect(W / 2 - 20, MY + MH + 14, 40, 18);            // stand neck
-        g2.fillRoundRect(W / 2 - 60, MY + MH + 30, 120, 10, 6, 6); // stand base
+        g2.fillRoundRect(mx - 14, my - 14, mw + 28, mh + 28, 16, 16);
+        g2.fillRect(W / 2 - 20, my + mh + 14, 40, deskY - (my + mh + 14)); // stand neck
+        g2.fillRoundRect(W / 2 - 70, deskY - 14, 140, 14, 8, 8);           // stand base
 
         // --- menu content drawn inside the screen (logical SWxSH scaled to fit) ---
-        double sx = MW / (double) SW, sy = MH / (double) SH;
-        Graphics2D gs = (Graphics2D) g2.create(MX, MY, MW, MH); // clips to the screen
+        double sx = mw / (double) SW, sy = mh / (double) SH;
+        Graphics2D gs = (Graphics2D) g2.create(mx, my, mw, mh); // clips to the screen
         gs.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         gs.scale(sx, sy);
         drawScreenContent(gs, t, clicking);
         gs.dispose();
 
         // --- cursor eases up to the PLAY button (window space), presses on click ---
-        float btnWX = (float) (MX + (SW / 2) * sx);
-        float btnWY = (float) (MY + 178 * sy);
+        float btnWX = (float) (mx + (SW / 2) * sx);
+        float btnWY = (float) (my + 178 * sy);
         float moveT = easeInOutQuad(clamp(t / 0.55f, 0, 1));
-        float curX = lerp(MX + 60, btnWX - 4, moveT);
-        float curY = lerp(MY + MH - 30, btnWY + 6, moveT);
+        float curX = lerp(mx + 60, btnWX - 4, moveT);
+        float curY = lerp(my + mh - 30, btnWY + 6, moveT);
         float pressScale = clicking ? 0.85f : 1f;
         g2.setColor(Color.WHITE);
         g2.fillPolygon(buildCursor(curX, curY, pressScale));
@@ -442,7 +449,7 @@ public class GameEnter_Scene extends JPanel {
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("Angry Birds - Menu");
-        frame.add(new GameEnter_Scene(640, 360));
+        frame.add(new GameEnter_Scene(600, 600));
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

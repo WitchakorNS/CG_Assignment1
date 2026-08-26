@@ -14,11 +14,12 @@ import java.awt.geom.*;
 public class MyMemoryAnimation extends JPanel {
 
     private final long startTime;
-    private static final int W = 640, H = 360;
+    private static final int W = 600, H = 600;
 
-    private static final int SCENE1_END = 2000;  // desktop -> click -> fade out
-    private static final int SCENE2_END = 6000;  // gameplay -> 3 stars (+ hold)
-    private static final int SCENE3_END = 9500;  // adult -> child flashback (+ hold)
+    // Timeline markers (ms)
+    private static final int S1_END = 4800;  // Adult -> Child morph
+    private static final int S2_END = 8000;  // Desktop Menu & click
+    private static final int S3_END = 14000; // Gameplay & Level complete
     private static final int LOOP_PAUSE = 1000;
 
     public MyMemoryAnimation() {
@@ -30,6 +31,7 @@ public class MyMemoryAnimation extends JPanel {
 
     // ---------- small math helpers ----------
     private float clamp(float v, float lo, float hi) { return Math.max(lo, Math.min(hi, v)); }
+    private float clamp01(float v) { return clamp(v, 0f, 1f); }
     private float lerp(float a, float b, float t) { return a + (b - a) * t; }
     private float easeInOutQuad(float t) { return t < 0.5f ? 2 * t * t : 1 - (float) Math.pow(-2 * t + 2, 2) / 2; }
     private float easeOutQuad(float t) { return 1 - (1 - t) * (1 - t); }
@@ -78,62 +80,72 @@ public class MyMemoryAnimation extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         long elapsed = System.currentTimeMillis() - startTime;
-        long cycle = SCENE3_END + LOOP_PAUSE;
+        long cycle = S3_END + LOOP_PAUSE;
         long t = elapsed % cycle;
 
-        if (t < SCENE1_END) {
-            drawScene1(g2, t / (float) SCENE1_END);
-        } else if (t < SCENE2_END) {
-            drawScene2(g2, (t - SCENE1_END) / (float) (SCENE2_END - SCENE1_END));
-        } else if (t < SCENE3_END) {
-            drawScene3(g2, (t - SCENE2_END) / (float) (SCENE3_END - SCENE2_END));
+        if (t < S1_END) {
+            drawScene3(g2, t / (float) S1_END); // 1. Adult -> Child
+        } else if (t < S2_END) {
+            drawScene1(g2, (t - S1_END) / (float) (S2_END - S1_END)); // 2. Menu
+        } else if (t < S3_END) {
+            drawScene2(g2, (t - S2_END) / (float) (S3_END - S2_END)); // 3. Game
         } else {
-            drawScene3(g2, 1f); // hold last frame during the pause
+            drawScene2(g2, 1f); // hold last frame during pause
         }
     }
 
     // ========== SCENE 1 (0-1.2s): desktop -> click PLAY -> fade out ==========
     private void drawScene1(Graphics2D g2, float t) {
-        // dim room behind the monitor
+        int mw = (int) (W * 0.8f);              // 480
+        int mh = (int) (mw * (360 / 640.0f));   // 270
+        int mx = (W - mw) / 2;                  // 60
+        int my = (int) (H * 0.20f);             // 120
+        int deskY = my + mh + 14 + 60;          // 464
+
+        // dim room behind the monitor + desk
         g2.setColor(new Color(30, 30, 36));
         g2.fillRect(0, 0, W, H);
         g2.setColor(new Color(60, 45, 35));
-        g2.fillRect(0, H - 30, W, 30); // desk edge
+        g2.fillRect(0, deskY, W, H - deskY);
+        g2.setColor(new Color(45, 32, 24));
+        g2.fillRect(0, deskY, W, 6);
 
-        // monitor bezel
-        int mx = 90, my = 30, mw = 460, mh = 260;
+        // monitor bezel & stand
         g2.setColor(new Color(35, 35, 38));
         g2.fillRoundRect(mx - 14, my - 14, mw + 28, mh + 28, 16, 16);
-        g2.fillRect(W / 2 - 20, my + mh + 14, 40, 18); // stand neck
-        g2.fillRoundRect(W / 2 - 60, my + mh + 30, 120, 10, 6, 6); // stand base
+        g2.fillRect(W / 2 - 20, my + mh + 14, 40, deskY - (my + mh + 14)); // stand neck
+        g2.fillRoundRect(W / 2 - 70, deskY - 14, 140, 14, 8, 8);           // stand base
 
         // screen: Angry Birds 2013 menu
         g2.setPaint(new GradientPaint(mx, my, new Color(120, 175, 220), mx, my + mh, new Color(200, 225, 235)));
         g2.fillRect(mx, my, mw, mh);
         g2.setColor(new Color(255, 255, 255, 160));
         g2.fillOval(mx + 40, my + 40, 60, 22);
-        g2.fillOval(mx + 340, my + 30, 70, 24);
+        g2.fillOval(mx + mw - 120, my + 30, 70, 24);
 
         g2.setColor(new Color(180, 30, 20));
-        g2.setFont(new Font("SansSerif", Font.BOLD, 30));
-        g2.drawString("ANGRY BIRDS", mx + 95, my + 70);
+        g2.setFont(new Font("SansSerif", Font.BOLD, 32));
+        FontMetrics fm = g2.getFontMetrics();
+        String title = "ANGRY BIRDS";
+        g2.drawString(title, mx + (mw - fm.stringWidth(title)) / 2, my + 72);
         g2.setColor(new Color(255, 210, 40));
-        g2.setFont(new Font("SansSerif", Font.BOLD, 14));
-        g2.drawString("2013", mx + mw / 2 - 18, my + 92);
+        g2.setFont(new Font("SansSerif", Font.BOLD, 15));
+        fm = g2.getFontMetrics();
+        g2.drawString("2013", mx + (mw - fm.stringWidth("2013")) / 2, my + 94);
 
-        int btnCx = mx + mw / 2, btnCy = my + mh / 2 + 30, btnR = 34;
+        int btnCx = mx + mw / 2, btnCy = my + mh / 2 + 32, btnR = 36;
         boolean clicking = t > 0.5f && t < 0.62f;
         g2.setColor(clicking ? new Color(255, 90, 60) : new Color(210, 40, 30));
         g2.fillOval(btnCx - btnR, btnCy - btnR, btnR * 2, btnR * 2);
         g2.setColor(Color.WHITE);
-        int[] tx = {btnCx - 10, btnCx - 10, btnCx + 16};
-        int[] ty = {btnCy - 16, btnCy + 16, btnCy};
+        int[] tx = {btnCx - 11, btnCx - 11, btnCx + 18};
+        int[] ty = {btnCy - 18, btnCy + 18, btnCy};
         g2.fillPolygon(tx, ty, 3);
 
         // click ripple
         if (t > 0.5f) {
             float rt = clamp((t - 0.5f) / 0.3f, 0, 1);
-            int rippleR = (int) (btnR + rt * 30);
+            int rippleR = (int) (btnR + rt * 35);
             g2.setColor(new Color(255, 255, 255, (int) (200 * (1 - rt))));
             g2.setStroke(new BasicStroke(3));
             g2.drawOval(btnCx - rippleR, btnCy - rippleR, rippleR * 2, rippleR * 2);
@@ -141,7 +153,7 @@ public class MyMemoryAnimation extends JPanel {
 
         // cursor: eases in from bottom-left of screen to the button, "presses" on click
         float moveT = easeInOutQuad(clamp(t / 0.5f, 0, 1));
-        float startX = mx + 30, startY = my + mh - 20;
+        float startX = mx + 40, startY = my + mh - 20;
         float curX = lerp(startX, btnCx - 4, moveT);
         float curY = lerp(startY, btnCy - 4, moveT);
         float pressScale = clicking ? 0.85f : 1f;
@@ -163,22 +175,23 @@ public class MyMemoryAnimation extends JPanel {
     private void drawScene2(Graphics2D g2, float t) {
         g2.setPaint(new GradientPaint(0, 0, new Color(140, 190, 230), 0, H, new Color(210, 230, 240)));
         g2.fillRect(0, 0, W, H);
+        int groundH = 80;
         g2.setColor(new Color(120, 160, 90));
-        g2.fillRect(0, H - 50, W, 50);
+        g2.fillRect(0, H - groundH, W, groundH);
 
-        int slingX = 110, slingBaseY = H - 50;
+        int slingX = 110, slingBaseY = H - groundH;
         g2.setColor(new Color(90, 60, 30));
-        g2.setStroke(new BasicStroke(8));
-        g2.drawLine(slingX - 15, slingBaseY, slingX - 15, slingBaseY - 90);
-        g2.drawLine(slingX + 15, slingBaseY, slingX + 15, slingBaseY - 90);
+        g2.setStroke(new BasicStroke(10));
+        g2.drawLine(slingX - 18, slingBaseY, slingX - 18, slingBaseY - 110);
+        g2.drawLine(slingX + 18, slingBaseY, slingX + 18, slingBaseY - 110);
 
-        int towerX = 480;
+        int towerX = 450;
         Rectangle[] blocks = {
-                new Rectangle(towerX, H - 50 - 40, 30, 40),
-                new Rectangle(towerX + 40, H - 50 - 40, 30, 40),
-                new Rectangle(towerX, H - 50 - 80, 70, 40)
+                new Rectangle(towerX, H - groundH - 50, 35, 50),
+                new Rectangle(towerX + 45, H - groundH - 50, 35, 50),
+                new Rectangle(towerX, H - groundH - 95, 80, 45)
         };
-        int pigX = towerX + 20, pigY = H - 50 - 110;
+        int pigX = towerX + 40, pigY = H - groundH - 130;
 
         float shotT = clamp(t / 0.5f, 0, 1); // shot sequence packed into first half of the scene
         float birdX, birdY;
@@ -186,18 +199,18 @@ public class MyMemoryAnimation extends JPanel {
 
         if (shotT < 0.18f) {
             float pt = easeOutQuad(shotT / 0.18f);
-            birdX = lerp(slingX, slingX - 45, pt);
-            birdY = lerp(slingBaseY - 60, slingBaseY - 40, pt);
+            birdX = lerp(slingX, slingX - 55, pt);
+            birdY = lerp(slingBaseY - 75, slingBaseY - 50, pt);
             g2.setColor(new Color(60, 40, 20));
-            g2.setStroke(new BasicStroke(4));
-            g2.drawLine(slingX - 15, slingBaseY - 85, (int) birdX, (int) birdY);
-            g2.drawLine(slingX + 15, slingBaseY - 85, (int) birdX, (int) birdY);
+            g2.setStroke(new BasicStroke(5));
+            g2.drawLine(slingX - 18, slingBaseY - 105, (int) birdX, (int) birdY);
+            g2.drawLine(slingX + 18, slingBaseY - 105, (int) birdX, (int) birdY);
         } else if (shotT < 0.55f) {
             float ft = (shotT - 0.18f) / 0.37f;
-            float startX = slingX - 45, startY = slingBaseY - 40;
+            float startX = slingX - 55, startY = slingBaseY - 50;
             birdX = lerp(startX, pigX, ft);
             float straightY = lerp(startY, pigY, ft);
-            birdY = straightY - (float) Math.sin(ft * Math.PI) * 110;
+            birdY = straightY - (float) Math.sin(ft * Math.PI) * 180;
         } else {
             float it = clamp((shotT - 0.55f) / 0.45f, 0, 1);
             birdX = pigX; birdY = pigY;
@@ -205,8 +218,8 @@ public class MyMemoryAnimation extends JPanel {
             g2.setColor(new Color(150, 100, 50));
             for (int i = 0; i < blocks.length; i++) {
                 Rectangle b = blocks[i];
-                float fall = it * (10 + i * 6);
-                float rot = it * (i % 2 == 0 ? 0.3f : -0.3f);
+                float fall = it * (14 + i * 8);
+                float rot = it * (i % 2 == 0 ? 0.35f : -0.35f);
                 Graphics2D g3 = (Graphics2D) g2.create();
                 g3.translate(b.x + b.width / 2f, b.y + b.height / 2f + fall);
                 g3.rotate(rot);
@@ -217,12 +230,12 @@ public class MyMemoryAnimation extends JPanel {
                 g2.setColor(new Color(120, 190, 90));
                 for (int i = 0; i < 8; i++) {
                     double ang = i * (Math.PI * 2 / 8);
-                    float dist = it * 40;
-                    g2.fillOval((int) (pigX + Math.cos(ang) * dist) - 4, (int) (pigY + Math.sin(ang) * dist) - 4, 8, 8);
+                    float dist = it * 50;
+                    g2.fillOval((int) (pigX + Math.cos(ang) * dist) - 5, (int) (pigY + Math.sin(ang) * dist) - 5, 10, 10);
                 }
             }
             g2.setColor(new Color(200, 30, 20));
-            g2.fillOval((int) birdX - 10, (int) birdY - 10, 20, 20);
+            g2.fillOval((int) birdX - 12, (int) birdY - 12, 24, 24);
         }
 
         if (shotT < 0.55f) {
@@ -230,16 +243,16 @@ public class MyMemoryAnimation extends JPanel {
             g2.setColor(new Color(150, 100, 50));
             for (Rectangle b : blocks) g2.fillRect(b.x, b.y, b.width, b.height);
             g2.setColor(new Color(120, 190, 90));
-            g2.fillOval(pigX - 15, pigY - 15, 30, 30);
+            g2.fillOval(pigX - 18, pigY - 18, 36, 36);
             g2.setColor(new Color(200, 30, 20));
-            g2.fillOval((int) birdX - 12, (int) birdY - 12, 24, 24);
+            g2.fillOval((int) birdX - 14, (int) birdY - 14, 28, 28);
         }
 
         // "LEVEL COMPLETE" panel + 3 stars, once the shot has landed
         if (impactDone) {
             float panelT = clamp((t - 0.5f) / 0.12f, 0, 1);
             float panelScale = easeOutBack(panelT);
-            int pw = 300, ph = 150;
+            int pw = 340, ph = 170;
             int pcx = W / 2, pcy = H / 2;
 
             Graphics2D gp = (Graphics2D) g2.create();
@@ -253,17 +266,19 @@ public class MyMemoryAnimation extends JPanel {
             gp.drawRoundRect(-pw / 2, -ph / 2, pw, ph, 24, 24);
 
             gp.setColor(new Color(90, 55, 20));
-            gp.setFont(new Font("SansSerif", Font.BOLD, 22));
-            gp.drawString("LEVEL COMPLETE!", -pw / 2 + 26, -ph / 2 + 40);
+            gp.setFont(new Font("SansSerif", Font.BOLD, 24));
+            FontMetrics fm = gp.getFontMetrics();
+            String title = "LEVEL COMPLETE!";
+            gp.drawString(title, -fm.stringWidth(title) / 2, -ph / 2 + 48);
 
             // stars pop in one by one at fixed points along the scene timeline
             float[] starTimes = {0.58f, 0.66f, 0.74f};
-            int[] starX = {-60, 0, 60};
+            int[] starX = {-70, 0, 70};
             for (int i = 0; i < 3; i++) {
                 float st = clamp((t - starTimes[i]) / 0.09f, 0, 1);
                 if (st > 0f) {
                     float sScale = easeOutBack(st);
-                    drawStar(gp, starX[i], 10, sScale, true);
+                    drawStar(gp, starX[i], 12, sScale * 1.2f, true);
                 }
             }
             gp.dispose();
@@ -279,19 +294,19 @@ public class MyMemoryAnimation extends JPanel {
         g2.fillRect(0, 0, W, H);
 
         // soft glow behind the face (screen light, later becomes a warm memory glow)
-        Point2D glowCenter = new Point2D.Float(W / 2f, H / 2f - 10);
-        RadialGradientPaint glow = new RadialGradientPaint(glowCenter, 170,
+        Point2D glowCenter = new Point2D.Float(W / 2f, H / 2f - 20);
+        RadialGradientPaint glow = new RadialGradientPaint(glowCenter, 240,
                 new float[]{0f, 1f},
                 new Color[]{new Color(255, 255, 255, (int) lerp(60, 30, warm)), new Color(0, 0, 0, 0)});
         g2.setPaint(glow);
-        g2.fillOval((int) (glowCenter.getX() - 170), (int) (glowCenter.getY() - 170), 340, 340);
+        g2.fillOval((int) (glowCenter.getX() - 240), (int) (glowCenter.getY() - 240), 480, 480);
 
         float adultAlpha = 1f - clamp((t - 0.40f) / 0.35f, 0, 1);
         float childAlpha = clamp((t - 0.40f) / 0.35f, 0, 1);
         float smile = clamp(t / 0.35f, 0, 1);
 
-        if (adultAlpha > 0f) drawFace(g2, W / 2f, H / 2f + 10, 1.05f, false, smile, adultAlpha);
-        if (childAlpha > 0f) drawFace(g2, W / 2f, H / 2f + 20, 0.85f, true, 0.6f + 0.4f * smile, childAlpha);
+        if (adultAlpha > 0f) drawFace(g2, W / 2f, H / 2f + 15, 1.25f, false, smile, adultAlpha);
+        if (childAlpha > 0f) drawFace(g2, W / 2f, H / 2f + 25, 1.05f, true, 0.6f + 0.4f * smile, childAlpha);
 
         // memory-flash rings during the crossfade
         if (t > 0.40f && t < 0.80f) {
@@ -299,10 +314,10 @@ public class MyMemoryAnimation extends JPanel {
             for (int i = 0; i < 2; i++) {
                 float ringT = clamp(rt - i * 0.18f, 0, 1);
                 if (ringT <= 0f || ringT >= 1f) continue;
-                int r = (int) (ringT * 220);
+                int r = (int) (ringT * 280);
                 g2.setColor(new Color(255, 255, 255, (int) (120 * (1 - ringT))));
                 g2.setStroke(new BasicStroke(2f));
-                g2.drawOval(W / 2 - r, H / 2 - r, r * 2, r * 2);
+                g2.drawOval(W / 2 - r, (int) glowCenter.getY() - r, r * 2, r * 2);
             }
         }
 

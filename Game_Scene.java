@@ -94,22 +94,23 @@ public class Game_Scene extends JPanel {
     private void drawGameplay(Graphics2D g2, float t) {
         g2.setPaint(new GradientPaint(0, 0, new Color(140, 190, 230), 0, H, new Color(210, 230, 240)));
         g2.fillRect(0, 0, W, H);
+        int groundH = 80;
         g2.setColor(new Color(120, 160, 90));
-        g2.fillRect(0, H - 50, W, 50);
+        g2.fillRect(0, H - groundH, W, groundH);
 
-        int slingX = 110, slingBaseY = H - 50;
+        int slingX = 110, slingBaseY = H - groundH;
         g2.setColor(new Color(90, 60, 30));
-        g2.setStroke(new BasicStroke(8));
-        g2.drawLine(slingX - 15, slingBaseY, slingX - 15, slingBaseY - 90);
-        g2.drawLine(slingX + 15, slingBaseY, slingX + 15, slingBaseY - 90);
+        g2.setStroke(new BasicStroke(10));
+        g2.drawLine(slingX - 18, slingBaseY, slingX - 18, slingBaseY - 110);
+        g2.drawLine(slingX + 18, slingBaseY, slingX + 18, slingBaseY - 110);
 
-        int towerX = 480;
+        int towerX = 450;
         Rectangle[] blocks = {
-                new Rectangle(towerX, H - 50 - 40, 30, 40),
-                new Rectangle(towerX + 40, H - 50 - 40, 30, 40),
-                new Rectangle(towerX, H - 50 - 80, 70, 40)
+                new Rectangle(towerX, H - groundH - 50, 35, 50),
+                new Rectangle(towerX + 45, H - groundH - 50, 35, 50),
+                new Rectangle(towerX, H - groundH - 95, 80, 45)
         };
-        int pigX = towerX + 20, pigY = H - 50 - 110;
+        int pigX = towerX + 40, pigY = H - groundH - 130;
 
         float shotT = clamp(t / 0.5f, 0, 1); // shot sequence packed into first half of the scene
         float birdX, birdY;
@@ -117,18 +118,18 @@ public class Game_Scene extends JPanel {
 
         if (shotT < 0.18f) {
             float pt = easeOutQuad(shotT / 0.18f);
-            birdX = lerp(slingX, slingX - 45, pt);
-            birdY = lerp(slingBaseY - 60, slingBaseY - 40, pt);
+            birdX = lerp(slingX, slingX - 55, pt);
+            birdY = lerp(slingBaseY - 75, slingBaseY - 50, pt);
             g2.setColor(new Color(60, 40, 20));
-            g2.setStroke(new BasicStroke(4));
-            g2.drawLine(slingX - 15, slingBaseY - 85, (int) birdX, (int) birdY);
-            g2.drawLine(slingX + 15, slingBaseY - 85, (int) birdX, (int) birdY);
+            g2.setStroke(new BasicStroke(5));
+            g2.drawLine(slingX - 18, slingBaseY - 105, (int) birdX, (int) birdY);
+            g2.drawLine(slingX + 18, slingBaseY - 105, (int) birdX, (int) birdY);
         } else if (shotT < 0.55f) {
             float ft = (shotT - 0.18f) / 0.37f;
-            float startX = slingX - 45, startY = slingBaseY - 40;
+            float startX = slingX - 55, startY = slingBaseY - 50;
             birdX = lerp(startX, pigX, ft);
             float straightY = lerp(startY, pigY, ft);
-            birdY = straightY - (float) Math.sin(ft * Math.PI) * 110;
+            birdY = straightY - (float) Math.sin(ft * Math.PI) * 180;
         } else {
             float it = clamp((shotT - 0.55f) / 0.45f, 0, 1);
             birdX = pigX; birdY = pigY;
@@ -136,8 +137,8 @@ public class Game_Scene extends JPanel {
             g2.setColor(new Color(150, 100, 50));
             for (int i = 0; i < blocks.length; i++) {
                 Rectangle b = blocks[i];
-                float fall = it * (10 + i * 6);
-                float rot = it * (i % 2 == 0 ? 0.3f : -0.3f);
+                float fall = it * (14 + i * 8);
+                float rot = it * (i % 2 == 0 ? 0.35f : -0.35f);
                 Graphics2D g3 = (Graphics2D) g2.create();
                 g3.translate(b.x + b.width / 2f, b.y + b.height / 2f + fall);
                 g3.rotate(rot);
@@ -148,26 +149,26 @@ public class Game_Scene extends JPanel {
                 g2.setColor(new Color(120, 190, 90));
                 for (int i = 0; i < 8; i++) {
                     double ang = i * (Math.PI * 2 / 8);
-                    float dist = it * 40;
-                    g2.fillOval((int) (pigX + Math.cos(ang) * dist) - 4, (int) (pigY + Math.sin(ang) * dist) - 4, 8, 8);
+                    float dist = it * 50;
+                    g2.fillOval((int) (pigX + Math.cos(ang) * dist) - 5, (int) (pigY + Math.sin(ang) * dist) - 5, 10, 10);
                 }
             }
-            drawSprite(g2, birdImg, birdX, birdY, 40);   // bird lands on the pig (was red circle)
+            drawSprite(g2, birdImg, birdX, birdY, 48);   // bird lands on the pig
         }
 
         if (shotT < 0.55f) {
             // pre-impact: draw intact blocks, pig, bird
             g2.setColor(new Color(150, 100, 50));
             for (Rectangle b : blocks) g2.fillRect(b.x, b.y, b.width, b.height);
-            drawSprite(g2, pigImg, pigX, pigY, 52);                 // pig (was green circle)
-            drawSprite(g2, birdImg, birdX, birdY, 44);              // bird (was red circle)
+            drawSprite(g2, pigImg, pigX, pigY, 56);
+            drawSprite(g2, birdImg, birdX, birdY, 48);
         }
 
         // "LEVEL COMPLETE" panel + 3 stars, once the shot has landed
         if (impactDone) {
             float panelT = clamp((t - 0.5f) / 0.12f, 0, 1);
             float panelScale = easeOutBack(panelT);
-            int pw = 300, ph = 150;
+            int pw = 340, ph = 170;
             int pcx = W / 2, pcy = H / 2;
 
             Graphics2D gp = (Graphics2D) g2.create();
@@ -181,16 +182,18 @@ public class Game_Scene extends JPanel {
             gp.drawRoundRect(-pw / 2, -ph / 2, pw, ph, 24, 24);
 
             gp.setColor(new Color(90, 55, 20));
-            gp.setFont(new Font("SansSerif", Font.BOLD, 22));
-            gp.drawString("LEVEL COMPLETE!", -pw / 2 + 26, -ph / 2 + 40);
+            gp.setFont(new Font("SansSerif", Font.BOLD, 24));
+            FontMetrics fm = gp.getFontMetrics();
+            String title = "LEVEL COMPLETE!";
+            gp.drawString(title, -fm.stringWidth(title) / 2, -ph / 2 + 48);
 
             float[] starTimes = {0.58f, 0.66f, 0.74f};
-            int[] starX = {-60, 0, 60};
+            int[] starX = {-70, 0, 70};
             for (int i = 0; i < 3; i++) {
                 float st = clamp((t - starTimes[i]) / 0.09f, 0, 1);
                 if (st > 0f) {
                     float sScale = easeOutBack(st);
-                    drawStar(gp, starX[i], 10, sScale, true);
+                    drawStar(gp, starX[i], 16, sScale * 1.2f, true);
                 }
             }
             gp.dispose();
@@ -407,7 +410,7 @@ public class Game_Scene extends JPanel {
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("Angry Birds - Game Scene");
-        frame.add(new Game_Scene(640, 360));
+        frame.add(new Game_Scene(600, 600));
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
