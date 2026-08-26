@@ -2,6 +2,7 @@ package CG_Assignment1;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.*;
 import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -42,8 +43,8 @@ public class AdultChild_Scene extends JPanel {
         setPreferredSize(new Dimension(W, H));
         setBackground(Color.BLACK);
 
-        this.adultImg = new DrawAdult(FW, FH).render();
-        this.childImg = new DrawChild(FW, FH).render();
+        this.adultImg = new DrawAdult(FW, FH).render(true);  // clean: no black rims, no baked mouth
+        this.childImg = new DrawChild(FW, FH).render(true);
         this.figW = Math.round(FW * SCALE);
         this.figH = Math.round(FH * SCALE);
         this.figX = (W - figW) / 2;                 // centred horizontally
@@ -75,33 +76,52 @@ public class AdultChild_Scene extends JPanel {
                                        adultAlpha = 1f - morph; childAlpha = morph; }
         else                         { adultAlpha = 0f; childAlpha = 1f; morph = 1f; }
 
-        // --- background: soft glow that warms up as the child appears ---
-        int top = (int) lerp(60, 120, childAlpha);
-        g2.setPaint(new GradientPaint(0, 0, new Color(top, top + 8, top + 24),
-                                      0, H, new Color(232, 224, 210)));
+        // smile grows over the first ~0.9s, then holds (like MyMemory's `smile`)
+        float smile = clamp01(t / 900f);
+
+        // --- background: dim/cool -> warm sepia memory tone (MyMemory Scene 3) ---
+        float warm = morph;
+        int br = (int) lerp(40, 235, warm), bgc = (int) lerp(44, 215, warm), bb = (int) lerp(62, 175, warm);
+        g2.setColor(new Color(br, bgc, bb));
         g2.fillRect(0, 0, W, H);
 
-        // --- figures, cross-faded ---
-        drawFigure(g2, adultImg, adultAlpha);
-        drawFigure(g2, childImg, childAlpha);
+        // --- soft radial glow behind the face ---
+        int gcx = W / 2, gcy = figY + Math.round(100 * SCALE);
+        RadialGradientPaint glow = new RadialGradientPaint(new Point2D.Float(gcx, gcy), 200,
+                new float[]{0f, 1f},
+                new Color[]{new Color(255, 255, 255, (int) lerp(70, 40, warm)), new Color(0, 0, 0, 0)});
+        g2.setPaint(glow);
+        g2.fillOval(gcx - 200, gcy - 200, 400, 400);
 
-        // --- white flash: peaks in the middle of the morph, fades at both ends ---
+        // --- figures + overlaid animated smiles, cross-faded ---
+        float amx = figX + 120 * SCALE, amy = figY + 136 * SCALE;   // adult mouth (screen space)
+        float cmx = figX + 121 * SCALE, cmy = figY + 176 * SCALE;   // child mouth
+        drawFigure(g2, adultImg, adultAlpha);
+        drawSmile(g2, amx, amy, 15 * SCALE, smile, adultAlpha, new Color(190, 105, 90)); // light: shows on beard
+        drawFigure(g2, childImg, childAlpha);
+        drawSmile(g2, cmx, cmy, 17 * SCALE, 0.6f + 0.4f * smile, childAlpha, new Color(90, 35, 30));
+
+        // --- white flash: peaks in the middle of the morph ---
         if (morph > 0f && morph < 1f) {
             float flash = (float) Math.sin(morph * Math.PI);
-            g2.setColor(new Color(255, 255, 255, (int) (210 * flash)));
+            g2.setColor(new Color(255, 255, 255, (int) (200 * flash)));
             g2.fillRect(0, 0, W, H);
 
-            // --- memory rings drawn with the midpointCircle algorithm ---
-            int cx = W / 2, cy = figY + Math.round(105 * SCALE);   // centred on the face
+            // --- smooth memory rings drawn with the midpointEllipse algorithm ---
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+            int cx = W / 2, cy = gcy;
             for (int i = 0; i < 3; i++) {
                 float rt = clamp01(morph - i * 0.18f);
                 if (rt <= 0f || rt >= 1f) continue;
-                int r = (int) (rt * 280);
-                int a = (int) (170 * (1 - rt));
+                int r = (int) (rt * 260);
+                if (r < 3) continue;   // keep all three passes (r, r-1, r-2) >= 1
+                int a = (int) (150 * (1 - rt));
                 useColor(g2, new Color(255, 255, 255, a));
-                midpointCircle(g2, cx, cy, r);
-                midpointCircle(g2, cx, cy, r - 1);
+                midpointEllipse(g2, cx, cy, r, r);           // 3 concentric passes -> solid, no dashes
+                midpointEllipse(g2, cx, cy, r - 1, r - 1);
+                midpointEllipse(g2, cx, cy, r - 2, r - 2);
             }
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         }
     }
 
@@ -110,6 +130,19 @@ public class AdultChild_Scene extends JPanel {
         Graphics2D gf = (Graphics2D) g2.create();
         gf.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, clamp01(alpha)));
         gf.drawImage(img, figX, figY, figW, figH, null);
+        gf.dispose();
+    }
+
+    // an animated smile curve (MyMemory style) overlaid on the figure's mouth
+    private void drawSmile(Graphics2D g2, float cx, float cy, float halfW, float smile, float alpha, Color col) {
+        if (alpha <= 0.001f) return;
+        Graphics2D gf = (Graphics2D) g2.create();
+        gf.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        gf.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, clamp01(alpha)));
+        gf.setColor(col);
+        gf.setStroke(new BasicStroke(3.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        float depth = smile * halfW * 1.1f;
+        gf.draw(new QuadCurve2D.Float(cx - halfW, cy, cx, cy + depth, cx + halfW, cy));
         gf.dispose();
     }
 
@@ -246,6 +279,7 @@ public class AdultChild_Scene extends JPanel {
 
     // Midpoint ellipse
     public void midpointEllipse(Graphics g,int xc, int yc, int a, int b) {
+        if (a <= 0 || b <= 0) return;   // guard: a==0/b==0 would loop forever
         int a2 = a * a;
         int b2 = b * b;
         int twoA2 = 2 * a2;

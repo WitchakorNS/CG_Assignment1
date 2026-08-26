@@ -282,7 +282,14 @@ public class DrawChild {
     private BufferedImage strokeLayer() { return newLayer(); }
 
     /** Draws the child figure into an ARGB image (transparent background) and returns it. */
-    public BufferedImage render() {
+    public BufferedImage render() { return render(false); }
+
+    /**
+     * @param clean  when true, omit the black rim outlines and the baked mouth
+     *               (used by AdultChild_Scene, which overlays an animated smile instead).
+     */
+    public BufferedImage render(boolean clean) {
+        boolean R = !clean;                       // draw rim outlines only when not "clean"
         fillBuffer(0x00000000);
         BufferedImage out = newLayer();
         Graphics2D g = (Graphics2D) out.getGraphics();
@@ -299,33 +306,33 @@ public class DrawChild {
         Color mouth  = new Color(120, 50, 45);
 
         // ---------- body (back to front) ----------
-        g.drawImage(ellipseLayer(100, 414, 26, 13, red, true), 0, 0, null);    // sneakers
-        g.drawImage(ellipseLayer(148, 414, 26, 13, red, true), 0, 0, null);
-        g.drawImage(ellipseLayer(84, 416, 11, 8, white, true), 0, 0, null);    // white toe caps
-        g.drawImage(ellipseLayer(164, 416, 11, 8, white, true), 0, 0, null);
-        g.drawImage(polyLayer(new int[]{84,156,150,90}, new int[]{286,286,404,404}, jeans, true), 0, 0, null); // jeans
-        { BufferedImage s = strokeLayer(); Graphics gs = s.getGraphics();
+        g.drawImage(ellipseLayer(100, 414, 26, 13, red, R), 0, 0, null);    // sneakers
+        g.drawImage(ellipseLayer(148, 414, 26, 13, red, R), 0, 0, null);
+        g.drawImage(ellipseLayer(84, 416, 11, 8, white, R), 0, 0, null);    // white toe caps
+        g.drawImage(ellipseLayer(164, 416, 11, 8, white, R), 0, 0, null);
+        g.drawImage(polyLayer(new int[]{84,156,150,90}, new int[]{286,286,404,404}, jeans, R), 0, 0, null); // jeans
+        if (R) { BufferedImage s = strokeLayer(); Graphics gs = s.getGraphics();
           useColor(gs, OUTLINE); bresenhamLine(gs,120,340,120,404); gs.dispose(); g.drawImage(s,0,0,null); } // inseam
-        g.drawImage(polyLayer(new int[]{88,118,116,90},  new int[]{392,392,406,406}, cuff, true), 0, 0, null); // cuffs
-        g.drawImage(polyLayer(new int[]{124,152,150,122}, new int[]{392,392,406,406}, cuff, true), 0, 0, null);
+        g.drawImage(polyLayer(new int[]{88,118,116,90},  new int[]{392,392,406,406}, cuff, R), 0, 0, null); // cuffs
+        g.drawImage(polyLayer(new int[]{124,152,150,122}, new int[]{392,392,406,406}, cuff, R), 0, 0, null);
         g.drawImage(polyLayer(new int[]{110,130,130,110}, new int[]{194,194,210,210}, skinSh, false), 0, 0, null); // neck
-        g.drawImage(polyLayer(new int[]{76,164,158,82}, new int[]{206,206,290,290}, tee, true), 0, 0, null); // t-shirt
-        g.drawImage(polyLayer(new int[]{76,102,94,66},  new int[]{206,208,248,244}, tee, true), 0, 0, null); // L sleeve
-        g.drawImage(polyLayer(new int[]{164,138,146,174}, new int[]{206,208,248,244}, tee, true), 0, 0, null); // R sleeve
-        g.drawImage(polyLayer(new int[]{70,90,84,66},  new int[]{244,246,300,296}, skin, true), 0, 0, null); // L arm
-        g.drawImage(polyLayer(new int[]{170,150,156,174}, new int[]{244,246,300,296}, skin, true), 0, 0, null); // R arm
-        g.drawImage(circleLayer(75, 304, 11, skin, true), 0, 0, null);         // hands
-        g.drawImage(circleLayer(165, 304, 11, skin, true), 0, 0, null);
+        g.drawImage(polyLayer(new int[]{76,164,158,82}, new int[]{206,206,290,290}, tee, R), 0, 0, null); // t-shirt
+        g.drawImage(polyLayer(new int[]{76,102,94,66},  new int[]{206,208,248,244}, tee, R), 0, 0, null); // L sleeve
+        g.drawImage(polyLayer(new int[]{164,138,146,174}, new int[]{206,208,248,244}, tee, R), 0, 0, null); // R sleeve
+        g.drawImage(polyLayer(new int[]{70,90,84,66},  new int[]{244,246,300,296}, skin, R), 0, 0, null); // L arm
+        g.drawImage(polyLayer(new int[]{170,150,156,174}, new int[]{244,246,300,296}, skin, R), 0, 0, null); // R arm
+        g.drawImage(circleLayer(75, 304, 11, skin, R), 0, 0, null);         // hands
+        g.drawImage(circleLayer(165, 304, 11, skin, R), 0, 0, null);
 
         // ---------- head ----------
         g.drawImage(ellipseLayer(120, 140, 50, 50, hair, false), 0, 0, null);  // hair (behind face)
-        g.drawImage(ellipseLayer(120, 152, 43, 46, skin, true), 0, 0, null);   // face over hair -> hair rim
-        g.drawImage(circleLayer(79, 158, 9, skin, true), 0, 0, null);          // ears
-        g.drawImage(circleLayer(161, 158, 9, skin, true), 0, 0, null);
+        g.drawImage(ellipseLayer(120, 152, 43, 46, skin, R), 0, 0, null);      // face over hair -> hair rim
+        g.drawImage(circleLayer(79, 158, 9, skin, R), 0, 0, null);             // ears
+        g.drawImage(circleLayer(161, 158, 9, skin, R), 0, 0, null);
         for (int[] c : new int[][]{{88,100,12},{106,94,13},{124,92,13},{142,94,13},{158,100,12}})
             g.drawImage(circleLayer(c[0], c[1], c[2], hair, false), 0, 0, null); // curls
-        g.drawImage(circleLayer(104, 150, 8, white, true), 0, 0, null);        // eyes (big)
-        g.drawImage(circleLayer(138, 150, 8, white, true), 0, 0, null);
+        g.drawImage(circleLayer(104, 150, 8, white, R), 0, 0, null);           // eyes (big)
+        g.drawImage(circleLayer(138, 150, 8, white, R), 0, 0, null);
         g.drawImage(circleLayer(104, 150, 4, dark, false), 0, 0, null);
         g.drawImage(circleLayer(138, 150, 4, dark, false), 0, 0, null);
         { BufferedImage s = strokeLayer(); Graphics gs = s.getGraphics();
@@ -333,19 +340,22 @@ public class DrawChild {
           bresenhamLine(gs, 94, 138, 112, 136);                                // brows
           bresenhamLine(gs, 130, 136, 148, 138);
           gs.dispose(); g.drawImage(s, 0, 0, null); }
-        // big open smile: two Bezier lips form a closed lens, flood-filled
-        { BufferedImage s = newLayer(); Graphics gs = s.getGraphics();
-          useColor(gs, mouth);
-          drawCubicBezier(gs, new int[]{104,170, 112,166, 130,166, 138,170}, 26); // upper lip
-          drawCubicBezier(gs, new int[]{138,170, 130,188, 112,188, 104,170}, 26); // lower lip
-          floodFill(s, 121, 178, TRANSPARENT, mouth);
-          gs.dispose(); g.drawImage(s, 0, 0, null); }
-        g.drawImage(polyLayer(new int[]{110,132,130,108}, new int[]{171,171,178,178}, white, false), 0, 0, null); // teeth
-        { BufferedImage s = newLayer(); Graphics gs = s.getGraphics();
-          useColor(gs, OUTLINE);
-          drawCubicBezier(gs, new int[]{104,170, 112,166, 130,166, 138,170}, 26);
-          drawCubicBezier(gs, new int[]{138,170, 130,188, 112,188, 104,170}, 26);
-          gs.dispose(); g.drawImage(s, 0, 0, null); }
+
+        if (!clean) {
+            // big open smile: two Bezier lips form a closed lens, flood-filled
+            BufferedImage s = newLayer(); Graphics gs = s.getGraphics();
+            useColor(gs, mouth);
+            drawCubicBezier(gs, new int[]{104,170, 112,166, 130,166, 138,170}, 26); // upper lip
+            drawCubicBezier(gs, new int[]{138,170, 130,188, 112,188, 104,170}, 26); // lower lip
+            floodFill(s, 121, 178, TRANSPARENT, mouth);
+            gs.dispose(); g.drawImage(s, 0, 0, null);
+            g.drawImage(polyLayer(new int[]{110,132,130,108}, new int[]{171,171,178,178}, white, false), 0, 0, null); // teeth
+            BufferedImage r2 = newLayer(); Graphics gr = r2.getGraphics();
+            useColor(gr, OUTLINE);
+            drawCubicBezier(gr, new int[]{104,170, 112,166, 130,166, 138,170}, 26);
+            drawCubicBezier(gr, new int[]{138,170, 130,188, 112,188, 104,170}, 26);
+            gr.dispose(); g.drawImage(r2, 0, 0, null);
+        }
 
         g.dispose();
         return out;
