@@ -16,9 +16,10 @@ public class MyMemoryAnimation extends JPanel {
     private final long startTime;
     private static final int W = 600, H = 600;
 
-    private static final int SCENE1_END = 2000;  // desktop -> click -> fade out
-    private static final int SCENE2_END = 6000;  // gameplay -> 3 stars (+ hold)
-    private static final int SCENE3_END = 9500;  // adult -> child flashback (+ hold)
+    // Timeline markers (ms)
+    private static final int S1_END = 4800;  // Adult -> Child morph
+    private static final int S2_END = 8000;  // Desktop Menu & click
+    private static final int S3_END = 14000; // Gameplay & Level complete
     private static final int LOOP_PAUSE = 1000;
 
     public MyMemoryAnimation() {
@@ -30,6 +31,7 @@ public class MyMemoryAnimation extends JPanel {
 
     // ---------- small math helpers ----------
     private float clamp(float v, float lo, float hi) { return Math.max(lo, Math.min(hi, v)); }
+    private float clamp01(float v) { return clamp(v, 0f, 1f); }
     private float lerp(float a, float b, float t) { return a + (b - a) * t; }
     private float easeInOutQuad(float t) { return t < 0.5f ? 2 * t * t : 1 - (float) Math.pow(-2 * t + 2, 2) / 2; }
     private float easeOutQuad(float t) { return 1 - (1 - t) * (1 - t); }
@@ -78,17 +80,17 @@ public class MyMemoryAnimation extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         long elapsed = System.currentTimeMillis() - startTime;
-        long cycle = SCENE3_END + LOOP_PAUSE;
+        long cycle = S3_END + LOOP_PAUSE;
         long t = elapsed % cycle;
 
-        if (t < SCENE1_END) {
-            drawScene1(g2, t / (float) SCENE1_END);
-        } else if (t < SCENE2_END) {
-            drawScene2(g2, (t - SCENE1_END) / (float) (SCENE2_END - SCENE1_END));
-        } else if (t < SCENE3_END) {
-            drawScene3(g2, (t - SCENE2_END) / (float) (SCENE3_END - SCENE2_END));
+        if (t < S1_END) {
+            drawScene3(g2, t / (float) S1_END); // 1. Adult -> Child
+        } else if (t < S2_END) {
+            drawScene1(g2, (t - S1_END) / (float) (S2_END - S1_END)); // 2. Menu
+        } else if (t < S3_END) {
+            drawScene2(g2, (t - S2_END) / (float) (S3_END - S2_END)); // 3. Game
         } else {
-            drawScene3(g2, 1f); // hold last frame during the pause
+            drawScene2(g2, 1f); // hold last frame during pause
         }
     }
 
