@@ -8,24 +8,14 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 /**
- * mergeAll2 — รวมทุก Scene ไว้ในไฟล์เดียว โดย "วาดวัตถุทุกชิ้นด้วยอัลกอริทึมที่แปะไว้เท่านั้น"
- * ได้แก่ bresenhamLine, cubicBerzierCurve/drawCubicBezier, floodFill, midpointCircle, midpointEllipse
- * (การเติมสีทึบ = วาดเส้นขอบด้วย midpoint/bresenham แล้วใช้ floodFill เติมภายใน)
- *
- * ใช้ Java2D เฉพาะกรณีที่อัลกอริทึมข้างต้นทำไม่ได้เท่านั้น:
- *   - ตัวอักษร (drawString): โลโก้ ANGRY BIRDS, ป้าย LEVEL COMPLETE
- *   - ไล่เฉดสี (GradientPaint / RadialGradientPaint): ท้องฟ้า, แสงฟุ้ง
- *   - การเคลียร์พื้นหลังเต็มเฟรมและเลเยอร์ fade (เป็น compositing ไม่ใช่ตัววัตถุ)
- *
  * ลำดับการเล่น (ตามไฟล์เก่า mergeAll.java):
  *   1. GameEnter_Scene  (0.0s - 3.2s)
  *   2. Game_Scene       (3.2s - 9.2s)
  *   3. AdultChild_Scene (9.2s - 14.0s)
  */
-public class mergeAll2 extends JPanel {
+public class Assignment1_67051143_67051106 extends JPanel {
     private static final int W = 600, H = 600;
 
-    // บัฟเฟอร์กระจกเงาที่ plot() เขียนตาม (ใช้ประกอบอัลกอริทึม ไม่ได้อ่านโดยตรง)
     private final BufferedImage buf = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
     private int penRGB = Color.BLACK.getRGB();
 
@@ -46,7 +36,7 @@ public class mergeAll2 extends JPanel {
     // ---------- Monitor / Scene2 geometry ----------
     private static final int SW = 640, SH = 360;                 // ความละเอียดเชิงตรรกะของหน้าจอ
     private static final int MW = 480, MH = 270, MX = 60, MY = 120;
-    private static final int DESK_Y = MY + MH + 14 + 60;         // 464
+    private static final int DESK_Y = MY + MH + 14 + 60;
 
     // ---------- AdultChild framing ----------
     private static final float SCALE = 1.65f;
@@ -58,7 +48,7 @@ public class mergeAll2 extends JPanel {
 
     private final long startTime;
 
-    public mergeAll2() {
+    public Assignment1_67051143_67051106() {
         setPreferredSize(new Dimension(W, H));
         setBackground(Color.BLACK);
 
@@ -80,7 +70,6 @@ public class mergeAll2 extends JPanel {
         new Timer(16, e -> repaint()).start();
     }
 
-    // ===================== อัลกอริทึมที่แปะไว้ (ใช้ตามนี้เท่านั้น) =====================
     public void bresenhamLine(Graphics g, int x1, int y1, int x2, int y2) {
         int dx = Math.abs(x2 - x1);
         int dy = Math.abs(y2 - y1);
@@ -214,7 +203,7 @@ public class mergeAll2 extends JPanel {
     private static BufferedImage newImg(int w, int h) 
     { return new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB); }
 
-    // วงรีทึบ: วาดเส้นขอบด้วย midpointEllipse (ซ้อนหลายรอบให้ทึบ) แล้ว floodFill ภายใน
+    // วงรีทึบ วาดเส้นขอบด้วย midpointEllipse (ซ้อนหลายรอบให้ทึบ) แล้ว floodFill ภายใน
     private BufferedImage ellipseSprite(int a, int b, Color fill, boolean rim) {
         int w = 2 * (a + PAD) + 1, h = 2 * (b + PAD) + 1, cx = a + PAD, cy = b + PAD;
         BufferedImage s = newImg(w, h);
@@ -253,7 +242,7 @@ public class mergeAll2 extends JPanel {
         g.drawImage(circleSprite(r, fill, rim), cx - r - PAD, cy - r - PAD, null);
     }
 
-    // รูปหลายเหลี่ยมทึบ: วาดขอบด้วย bresenham (เสริมเส้นเบียดเข้าหาจุดศูนย์ถ่วงกันรั่ว) แล้ว floodFill
+    // รูปหลายเหลี่ยมทึบ วาดขอบด้วย bresenham  แล้ว floodFill
     private void fillPoly(Graphics2D g, int[] xs, int[] ys, Color fill, boolean rim) {
         int n = xs.length;
         int minx = xs[0], miny = ys[0], maxx = xs[0], maxy = ys[0];
@@ -285,7 +274,7 @@ public class mergeAll2 extends JPanel {
         g.drawImage(s, ox, oy, null);
     }
 
-    // สี่เหลี่ยมทึบด้วยการสแกนไลน์ด้วย bresenham (วาดตรงลง Graphics เลย ประหยัดหน่วยความจำ)
+    // สี่เหลี่ยมทึบด้วยการสแกนไลน์ด้วย bresenham
     private void fillRectPrim(Graphics g, Color c, int x, int y, int w, int h) {
         if (w <= 0 || h <= 0) return;
         useColor(g, c);
@@ -430,7 +419,7 @@ public class mergeAll2 extends JPanel {
         strokeLine(g2, brd, px, py, px, py + ph);
         strokeLine(g2, brd, px + pw, py, px + pw, py + ph);
 
-        // ตัวอักษร: ใช้ Java2D (อัลกอริทึม primitive วาดตัวอักษรไม่ได้)
+        // ตัวอักษร
         if (panelT > 0.6f) {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setColor(new Color(90, 55, 20));
@@ -488,7 +477,7 @@ public class mergeAll2 extends JPanel {
         float smile = clamp01(t / 900f);
         float warm = morph;
 
-        // พื้นหลัง (compositing เต็มเฟรม) + แสงฟุ้ง (gradient) : Java2D
+        // พื้นหลัง (compositing เต็มเฟรม) + แสงฟุ้ง (gradient)
         int br = (int) lerp(40, 235, warm), bgc = (int) lerp(44, 215, warm), bb = (int) lerp(62, 175, warm);
         g2.setColor(new Color(br, bgc, bb));
         g2.fillRect(0, 0, W, H);
@@ -546,7 +535,7 @@ public class mergeAll2 extends JPanel {
         Graphics gs = s.getGraphics();
         useColor(gs, col);
         int d = (int) (depth * 1.4);
-        for (int o = 0; o < 3; o++) {   // ความหนา ~3px
+        for (int o = 0; o < 3; o++) { 
             drawCubicBezier(gs, new int[]{lx - hw, ly + o, lx - hw / 2, ly + d + o, lx + hw / 2, ly + d + o, lx + hw, ly + o}, 24);
         }
         gs.dispose();
@@ -577,7 +566,7 @@ public class mergeAll2 extends JPanel {
         fillRectPrim(g, new Color(35, 35, 38), MX - 14, MY - 14, MW + 28, MH + 28);
         fillRectPrim(g, new Color(35, 35, 38), W / 2 - 20, MY + MH + 14, 40, DESK_Y - (MY + MH + 14));
         fillEllipse(g, W / 2, DESK_Y - 6, 70, 8, new Color(35, 35, 38), false);
-        // เนื้อหาเมนูในจอ (เรนเดอร์เชิงตรรกะ 640x360 แล้วย่อวางในกรอบจอ)
+        // เนื้อหาเมนูในจอ
         BufferedImage menu = buildMenuScreen();
         g.drawImage(menu, MX, MY, MW, MH, null);
         g.dispose();
@@ -587,7 +576,7 @@ public class mergeAll2 extends JPanel {
     private BufferedImage buildMenuScreen() {
         BufferedImage img = newImg(SW, SH);
         Graphics2D g = (Graphics2D) img.getGraphics();
-        // ท้องฟ้าไล่เฉด (Java2D gradient)
+        // ท้องฟ้าไล่เฉด
         g.setPaint(new GradientPaint(0, 0, new Color(140, 200, 225), 0, SH, new Color(205, 234, 238)));
         g.fillRect(0, 0, SW, SH);
         // พุ่มไม้ไกล
@@ -877,7 +866,7 @@ public class mergeAll2 extends JPanel {
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Angry Birds - Memory Animation (mergeAll2)");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.add(new mergeAll2());
+            frame.add(new Assignment1_67051143_67051106());
             frame.pack();
             frame.setLocationRelativeTo(null);
             frame.setResizable(false);
