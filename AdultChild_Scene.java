@@ -26,7 +26,7 @@ public class AdultChild_Scene extends JPanel {
 
     // figure canvas size, scaled up for a half-body (waist-up) framing
     private static final int FW = 240, FH = 440;
-    private static final float SCALE = 1.7f;              // zoom in so we see the upper half
+    private static final float SCALE = 1.65f;             // zoom in so we see the upper half
     private final int figX, figY, figW, figH;
     private final BufferedImage adultImg, childImg;
 
@@ -86,12 +86,12 @@ public class AdultChild_Scene extends JPanel {
         g2.fillRect(0, 0, W, H);
 
         // --- soft radial glow behind the face ---
-        int gcx = W / 2, gcy = figY + Math.round(100 * SCALE);
-        RadialGradientPaint glow = new RadialGradientPaint(new Point2D.Float(gcx, gcy), 200,
+        int gcx = W / 2, gcy = figY + Math.round(110 * SCALE);
+        RadialGradientPaint glow = new RadialGradientPaint(new Point2D.Float(gcx, gcy), 240,
                 new float[]{0f, 1f},
                 new Color[]{new Color(255, 255, 255, (int) lerp(70, 40, warm)), new Color(0, 0, 0, 0)});
         g2.setPaint(glow);
-        g2.fillOval(gcx - 200, gcy - 200, 400, 400);
+        g2.fillOval(gcx - 240, gcy - 240, 480, 480);
 
         // --- figures + overlaid animated smiles, cross-faded ---
         float amx = figX + 120 * SCALE, amy = figY + 136 * SCALE;   // adult mouth (screen space)
@@ -113,7 +113,7 @@ public class AdultChild_Scene extends JPanel {
             for (int i = 0; i < 3; i++) {
                 float rt = clamp01(morph - i * 0.18f);
                 if (rt <= 0f || rt >= 1f) continue;
-                int r = (int) (rt * 260);
+                int r = (int) (rt * 280);
                 if (r < 3) continue;   // keep all three passes (r, r-1, r-2) >= 1
                 int a = (int) (150 * (1 - rt));
                 useColor(g2, new Color(255, 255, 255, a));
@@ -357,7 +357,7 @@ public class AdultChild_Scene extends JPanel {
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("Adult -> Child");
-        frame.add(new AdultChild_Scene(640, 480));
+        frame.add(new AdultChild_Scene(600, 600));
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
