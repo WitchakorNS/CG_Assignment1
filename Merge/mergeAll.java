@@ -8,30 +8,28 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 /**
- * mergeAll — 100% Standalone, Self-Contained 600x600 px Single-File Java Animation.
+ * ลำดับการเล่น (Sequence):
+ *   1. AdultChild_Scene (0.0s - 4.8s): ผู้ใหญ่ยิ้ม -> Flashback / Morph กลายเป็นเด็ก พร้อมวงแหวนความทรงจำ
+ *   2. GameEnter_Scene  (4.8s - 8.0s): เมนู Angry Birds 2013 บนหน้าจอ Monitor -> เลื่อนเคอร์เซอร์เมาส์ไปคลิกปุ่ม PLAY -> Fade out
+ *   3. Game_Scene       (8.0s - 14.0s): หนังสติ๊กยิงนกวิถีพาราโบลา -> ทำลายหอคอยบล็อกไม้และหมู -> ป้าย LEVEL COMPLETE + ดาว 3 ดวง
  *
- * Sequence:
- *   1. AdultChild_Scene (0.0s - 4.8s): Adult smiling -> Flashback / Morph into Child with memory rings
- *   2. GameEnter_Scene  (4.8s - 8.0s): Angry Birds 2013 Menu on desktop monitor -> cursor clicks PLAY -> fade out
- *   3. Game_Scene       (8.0s - 14.0s): Slingshot launches bird -> destroys block tower & pig -> LEVEL COMPLETE + 3 stars
- *
- * Loops smoothly.
+ * วนลูปการทำงานอัตโนมัติอย่างต่อเนื่อง
  */
 public class mergeAll extends JPanel {
     private static final int W = 600, H = 600;
 
-    // Scene 1 figure assets
+    // แอสเซทโมเดลรูปคนสำหรับ Scene 1
     private static final int FW = 240, FH = 440;
     private static final float SCALE = 1.65f;
     private final int figX, figY, figW, figH;
     private final BufferedImage adultImg, childImg;
 
-    // Scene 3 sprite assets
+    // แอสเซทสไปรต์ (Sprite) สำหรับ Scene 3
     private final BufferedImage birdImg, pigImg;
 
     private final long startTime;
 
-    // Timeline markers (in ms)
+    // มาร์กเกอร์ช่วงเวลาของ Timeline (หน่วยเป็นมิลลิวินาที / ms)
     private static final int S1_START = 0;
     private static final int S1_MORPH = 1200;
     private static final int S1_CHILD = 2800;
@@ -51,14 +49,14 @@ public class mergeAll extends JPanel {
     private static final int S3_HOLD  = 13200;
     private static final int TOTAL_CYCLE = 14000;
 
-    // Logical dimensions for monitor screen in Scene 2
+    // ขนาดความละเอียดเชิงตรรกะสำหรับหน้าจอ Monitor ใน Scene 2
     private static final int SW = 640, SH = 360;
 
     public mergeAll() {
         setPreferredSize(new Dimension(W, H));
         setBackground(Color.BLACK);
 
-        // Pre-render sprite assets using internal algorithms (100% self-contained)
+        // เรนเดอร์แอสเซทสไปรต์ล่วงหน้าด้วยอัลกอริทึมภายในคลาส (ทำงานได้ด้วยตัวเอง 100%)
         this.adultImg = renderAdult(FW, FH, true);
         this.childImg = renderChild(FW, FH, true);
         this.birdImg  = renderBird(120, 120);
@@ -73,7 +71,7 @@ public class mergeAll extends JPanel {
         new Timer(16, e -> repaint()).start(); // ~60fps
     }
 
-    // ===================== Math / Easing Helpers =====================
+    // ===================== ฟังก์ชันคำนวณและ Easing Helpers =====================
     private static float clamp(float v, float lo, float hi) { return Math.max(lo, Math.min(hi, v)); }
     private static float clamp01(float v) { return clamp(v, 0f, 1f); }
     private static float lerp(float a, float b, float t) { return a + (b - a) * t; }
@@ -121,7 +119,7 @@ public class mergeAll extends JPanel {
         g2.drawImage(img, Math.round(cx - size / 2f), Math.round(cy - size / 2f), size, size, null);
     }
 
-    // ===================== Main Paint Loop =====================
+    // ===================== ลูปการวาดหลัก (Main Paint Loop) =====================
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -143,6 +141,7 @@ public class mergeAll extends JPanel {
 
     // =========================================================================
     // SCENE 1: AdultChild_Scene (0.0s - 4.8s)
+    // ผู้ใหญ่ยิ้ม -> แสงวาบสีขาว & วงแหวน Midpoint Ellipse -> Morph กลายเป็นเด็ก
     // =========================================================================
     private void drawScene1(Graphics2D g2, long t) {
         float adultAlpha, childAlpha, morph;
@@ -158,13 +157,13 @@ public class mergeAll extends JPanel {
 
         float smile = clamp01(t / 900f);
 
-        // Background: cool tone -> warm sepia memory tone
+        // พื้นหลัง: โทนเย็นสลัว -> เปลี่ยนเป็นโทนอุ่นซีเปียแห่งความทรงจำ (Warm sepia memory tone)
         float warm = morph;
         int br = (int) lerp(40, 235, warm), bgc = (int) lerp(44, 215, warm), bb = (int) lerp(62, 175, warm);
         g2.setColor(new Color(br, bgc, bb));
         g2.fillRect(0, 0, W, H);
 
-        // Soft radial glow behind the face
+        // แสงฟุ้งรอบใบหน้า (Radial Glow)
         int gcx = W / 2, gcy = figY + Math.round(110 * SCALE);
         RadialGradientPaint glow = new RadialGradientPaint(new Point2D.Float(gcx, gcy), 240,
                 new float[]{0f, 1f},
@@ -172,7 +171,7 @@ public class mergeAll extends JPanel {
         g2.setPaint(glow);
         g2.fillOval(gcx - 240, gcy - 240, 480, 480);
 
-        // Figures + animated smile overlays
+        // วาดตัวละคร + เลเยอร์รอยยิ้มแบบแอนิเมชัน (Morph / Cross-fade)
         float amx = figX + 120 * SCALE, amy = figY + 136 * SCALE;
         float cmx = figX + 121 * SCALE, cmy = figY + 176 * SCALE;
         drawFigure(g2, adultImg, adultAlpha);
@@ -180,7 +179,7 @@ public class mergeAll extends JPanel {
         drawFigure(g2, childImg, childAlpha);
         drawSmile(g2, cmx, cmy, 17 * SCALE, 0.6f + 0.4f * smile, childAlpha, new Color(90, 35, 30));
 
-        // White flash & Midpoint Ellipse Memory Rings
+        // แสงวาบสีขาว (White flash) & วงแหวนคลื่นความทรงจำ (วาดด้วยอัลกอริทึม Midpoint Ellipse)
         if (morph > 0f && morph < 1f) {
             float flash = (float) Math.sin(morph * Math.PI);
             g2.setColor(new Color(255, 255, 255, (int) (200 * flash)));
@@ -202,7 +201,7 @@ public class mergeAll extends JPanel {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         }
 
-        // Fade to black at the end of Scene 1 into Scene 2
+        // ค่อย ๆ ดับมืด (Fade to black) ตอนท้ายของ Scene 1 ก่อนตัดเข้า Scene 2
         if (t > S1_END) {
             float fadeT = clamp01((t - S1_END) / (float) (S1_FADE - S1_END));
             g2.setColor(new Color(0, 0, 0, (int) (255 * fadeT)));
@@ -232,6 +231,7 @@ public class mergeAll extends JPanel {
 
     // =========================================================================
     // SCENE 2: GameEnter_Scene (4.8s - 8.0s)
+    // หน้าจอคอมพิวเตอร์ -> หน้าเมนู Angry Birds 2013 -> เคอร์เซอร์เมาส์คลิกปุ่ม PLAY -> Fade Out
     // =========================================================================
     private void drawScene2(Graphics2D g2, long t) {
         boolean clicking = t >= S2_CLICK && t < S2_CLICK + 350;
@@ -242,7 +242,7 @@ public class mergeAll extends JPanel {
         int my = (int) (H * 0.20f);             // 120
         int deskY = my + mh + 14 + 60;          // 464
 
-        // Dim room + desk
+        // บรรยากาศห้องมืดสลัว + โต๊ะไม้
         g2.setColor(new Color(30, 30, 36));
         g2.fillRect(0, 0, W, H);
         g2.setColor(new Color(60, 45, 35));
@@ -250,13 +250,13 @@ public class mergeAll extends JPanel {
         g2.setColor(new Color(45, 32, 24));
         g2.fillRect(0, deskY, W, 6);
 
-        // Monitor bezel + stand
+        // ขอบจอ Monitor + ขาตั้งจอ
         g2.setColor(new Color(35, 35, 38));
         g2.fillRoundRect(mx - 14, my - 14, mw + 28, mh + 28, 16, 16);
         g2.fillRect(W / 2 - 20, my + mh + 14, 40, deskY - (my + mh + 14));
         g2.fillRoundRect(W / 2 - 70, deskY - 14, 140, 14, 8, 8);
 
-        // Menu content drawn inside monitor screen
+        // วาดเนื้อหาเมนูเกมภายในพื้นที่จอ Monitor
         double sx = mw / (double) SW, sy = mh / (double) SH;
         Graphics2D gs = (Graphics2D) g2.create(mx, my, mw, mh);
         gs.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -264,7 +264,7 @@ public class mergeAll extends JPanel {
         drawMenuScreenContent(gs, t, clicking);
         gs.dispose();
 
-        // Cursor trajectory towards PLAY button
+        // การเคลื่อนที่ของเคอร์เซอร์เมาส์ตรงไปยังปุ่ม PLAY
         float btnWX = (float) (mx + (SW / 2) * sx);
         float btnWY = (float) (my + 178 * sy);
         float moveT = easeInOutQuad(clamp01((t - S2_START) / (float) (S2_CLICK - S2_START)));
@@ -277,14 +277,14 @@ public class mergeAll extends JPanel {
         g2.setStroke(new BasicStroke(1.2f));
         g2.drawPolygon(buildCursor(curX, curY, pressScale));
 
-        // Fade in from black at start of Scene 2
+        // ค่อย ๆ สว่างขึ้นจากความมืด (Fade in) ตอนเริ่ม Scene 2
         if (t < S2_START + 400) {
             float inAlpha = 1f - clamp01((t - S2_START) / 400f);
             g2.setColor(new Color(0, 0, 0, (int) (255 * inAlpha)));
             g2.fillRect(0, 0, W, H);
         }
 
-        // Fade to black at end of Scene 2
+        // ค่อย ๆ มืดลง (Fade to black) ตอนท้าย Scene 2 เพื่อตัดเข้าสู่เกมเพลย์
         if (t > S2_FADE) {
             float outAlpha = clamp01((t - S2_FADE) / (float) (S2_END - S2_FADE));
             g2.setColor(new Color(0, 0, 0, (int) (255 * outAlpha)));
@@ -293,18 +293,18 @@ public class mergeAll extends JPanel {
     }
 
     private void drawMenuScreenContent(Graphics2D g2, long t, boolean clicking) {
-        // 1. Sky
+        // 1. ท้องฟ้า (Sky)
         g2.setPaint(new GradientPaint(0, 0, new Color(140, 200, 225), 0, SH, new Color(205, 234, 238)));
         g2.fillRect(-4, -4, SW + 8, SH + 8);
 
-        // 2. Distant bushes
+        // 2. พุ่มไม้ระยะไกล (Distant bushes)
         g2.setColor(new Color(170, 205, 216));
         for (int bx = 40; bx < SW; bx += 150) {
             g2.fillOval(bx, 250, 90, 70);
             g2.fillRect(bx + 30, 258, 30, 50);
         }
 
-        // 3. Ground
+        // 3. ผืนดินและยอดหญ้า (Ground & Grass)
         int grassY = 300;
         g2.setColor(new Color(120, 185, 70));
         g2.fillRect(-4, grassY, SW + 8, 26);
@@ -319,14 +319,14 @@ public class mergeAll extends JPanel {
         g2.setColor(new Color(70, 78, 100));
         for (int px = 30; px < SW; px += 70) g2.fillOval(px, grassY + 34, 14, 9);
 
-        // 4. Decorative characters
+        // 4. ตัวละครตกแต่งหน้าเมนู (Decorative characters)
         drawMenuRedBird(g2, 180, 55, 1.0f);
         drawMenuWhiteBird(g2, 108, 288);
         drawMenuYellowBird(g2, 560, 175);
         drawMenuPig(g2, 500, 300, false);
         drawMenuPig(g2, 600, 298, true);
 
-        // 5. Logo
+        // 5. โลโก้เกม (Logo)
         g2.setFont(new Font("SansSerif", Font.BOLD, 48));
         String logo = "ANGRY BIRDS";
         FontMetrics fm = g2.getFontMetrics();
@@ -340,7 +340,7 @@ public class mergeAll extends JPanel {
         g2.setColor(Color.WHITE);
         g2.drawString(logo, lx, ly);
 
-        // 6. PLAY button
+        // 6. ปุ่ม PLAY สีแดง
         int bcx = SW / 2, bcy = 178, br = 42;
         g2.setColor(clicking ? new Color(255, 90, 60) : new Color(210, 40, 30));
         g2.fillOval(bcx - br, bcy - br, br * 2, br * 2);
@@ -352,7 +352,7 @@ public class mergeAll extends JPanel {
         int[] ty = {bcy - 24, bcy + 24, bcy};
         g2.fillPolygon(tx, ty, 3);
 
-        // 7. Click ripple
+        // 7. วงคลื่นกระเพื่อมจากการคลิก (Click ripple)
         if (t >= S2_CLICK) {
             float rt = clamp01((t - S2_CLICK) / 500f);
             int r = (int) (br + 8 + rt * 42);
@@ -427,6 +427,7 @@ public class mergeAll extends JPanel {
 
     // =========================================================================
     // SCENE 3: Game_Scene (8.0s - 14.0s)
+    // หนังสติ๊กยิงนก -> วิถีพาราโบลา -> หอคอยไม้พัง & กำจัดหมู -> ป้าย LEVEL COMPLETE + ดาว 3 ดวง
     // =========================================================================
     private void drawScene3(Graphics2D g2, long t) {
         g2.setPaint(new GradientPaint(0, 0, new Color(140, 190, 230), 0, H, new Color(210, 230, 240)));
@@ -453,7 +454,7 @@ public class mergeAll extends JPanel {
         boolean impactDone = t >= S3_HIT;
 
         if (t < S3_SHOT) {
-            // Pullback
+            // จังหวะดึงหนังสติ๊กถอยหลัง (Pullback)
             float pt = easeOutQuad(clamp01((t - S3_PULL) / (float) (S3_SHOT - S3_PULL)));
             birdX = lerp(slingX, slingX - 55, pt);
             birdY = lerp(slingBaseY - 75, slingBaseY - 50, pt);
@@ -466,7 +467,7 @@ public class mergeAll extends JPanel {
             g2.setColor(new Color(150, 100, 50));
             for (Rectangle b : blocks) g2.fillRect(b.x, b.y, b.width, b.height);
         } else if (t < S3_HIT) {
-            // Parabolic Flight
+            // จังหวะนกพุ่งลอยในอากาศตามวิถีโค้งพาราโบลา (Parabolic Flight)
             float ft = clamp01((t - S3_SHOT) / (float) (S3_HIT - S3_SHOT));
             float startX = slingX - 55, startY = slingBaseY - 50;
             birdX = lerp(startX, pigX, ft);
@@ -477,7 +478,7 @@ public class mergeAll extends JPanel {
             g2.setColor(new Color(150, 100, 50));
             for (Rectangle b : blocks) g2.fillRect(b.x, b.y, b.width, b.height);
         } else {
-            // Impact & Destruction
+            // จังหวะพุ่งชนและเกิดการทำลายล้าง (Impact & Destruction)
             float it = clamp01((t - S3_HIT) / 800f);
             birdX = pigX; birdY = pigY;
 
@@ -504,7 +505,7 @@ public class mergeAll extends JPanel {
             drawSprite(g2, birdImg, birdX, birdY, 48);
         }
 
-        // LEVEL COMPLETE Panel + 3 Stars
+        // ป้าย LEVEL COMPLETE! และดาวทอง 3 ดวง (3 Stars)
         if (impactDone) {
             float panelT = clamp01((t - S3_PANEL) / 400f);
             float panelScale = easeOutBack(panelT);
@@ -539,14 +540,14 @@ public class mergeAll extends JPanel {
             gp.dispose();
         }
 
-        // Fade in at start of Scene 3
+        // ค่อย ๆ สว่างขึ้น (Fade in) ตอนเริ่ม Scene 3
         if (t < S3_START + 400) {
             float inAlpha = 1f - clamp01((t - S3_START) / 400f);
             g2.setColor(new Color(0, 0, 0, (int) (255 * inAlpha)));
             g2.fillRect(0, 0, W, H);
         }
 
-        // Fade to black at end of cycle
+        // ค่อย ๆ มืดลง (Fade to black) ตอนจบรอบ เพื่อวนลูปกลับไป Scene 1 ใหม่อย่างราบรื่น
         if (t > S3_HOLD) {
             float outAlpha = clamp01((t - S3_HOLD) / (float) (TOTAL_CYCLE - S3_HOLD));
             g2.setColor(new Color(0, 0, 0, (int) (255 * outAlpha)));
@@ -555,8 +556,8 @@ public class mergeAll extends JPanel {
     }
 
     // =========================================================================
-    // Built-in Self-Contained Sprite Rendering Engine
-    // (Contains full logic of DrawAdult, DrawChild, DrawBird, DrawPig internally)
+    // กลไกเรนเดอร์สไปรต์แบบฝังในตัว (Sprite Rendering Engine)
+    // (รวบรวมฟังก์ชันวาดของ DrawAdult, DrawChild, DrawBird, DrawPig ไว้ภายในไฟล์เดียว)
     // =========================================================================
     private static final Color TRANSPARENT = new Color(0, 0, 0, 0);
     private static final Color OUTLINE     = new Color(30, 24, 20);
@@ -628,7 +629,7 @@ public class mergeAll extends JPanel {
         Color dark   = new Color(35, 28, 24);
         Color mouth  = new Color(120, 50, 45);
 
-        // Body
+        // ส่วนลำตัวผู้ใหญ่ (Body)
         g.drawImage(makeEllipseLayer(w, h, 100, 420, 26, 12, shoe, R), 0, 0, null);
         g.drawImage(makeEllipseLayer(w, h, 148, 420, 26, 12, shoe, R), 0, 0, null);
         g.drawImage(makePolyLayer(w, h, new int[]{84,156,150,90}, new int[]{268,268,414,414}, jeans, R), 0, 0, null);
@@ -646,7 +647,7 @@ public class mergeAll extends JPanel {
         g.drawImage(makeEllipseLayer(w, h, 120, 260, 28, 15, skin, R), 0, 0, null);
         g.drawImage(makePolyLayer(w, h, new int[]{110,130,130,110}, new int[]{150,150,170,170}, skinSh, false), 0, 0, null);
 
-        // Head
+        // ส่วนศีรษะและใบหน้าผู้ใหญ่ (Head)
         g.drawImage(makeEllipseLayer(w, h, 120, 86, 52, 56, hair, false), 0, 0, null);
         g.drawImage(makeEllipseLayer(w, h, 120, 98, 45, 50, skin, R), 0, 0, null);
         g.drawImage(makeCircleLayer(w, h, 73, 104, 9, skin, R), 0, 0, null);
@@ -670,6 +671,7 @@ public class mergeAll extends JPanel {
             g.drawImage(s, 0, 0, null);
         }
         if (!clean) {
+            // รอยยิ้มแบบเปิดปาก (วาดเส้นโค้ง Bezier + Flood Fill เติมสีริมฝีปากและฟัน)
             BufferedImage s = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
             Graphics gs = s.getGraphics();
             gs.setColor(mouth);
@@ -707,7 +709,7 @@ public class mergeAll extends JPanel {
         Color dark   = new Color(35, 28, 24);
         Color mouth  = new Color(120, 50, 45);
 
-        // Body
+        // ส่วนลำตัวเด็ก (Body)
         g.drawImage(makeEllipseLayer(w, h, 100, 414, 26, 13, red, R), 0, 0, null);
         g.drawImage(makeEllipseLayer(w, h, 148, 414, 26, 13, red, R), 0, 0, null);
         g.drawImage(makeEllipseLayer(w, h, 84, 416, 11, 8, white, R), 0, 0, null);
@@ -732,7 +734,7 @@ public class mergeAll extends JPanel {
         g.drawImage(makeCircleLayer(w, h, 75, 304, 11, skin, R), 0, 0, null);
         g.drawImage(makeCircleLayer(w, h, 165, 304, 11, skin, R), 0, 0, null);
 
-        // Head
+        // ส่วนศีรษะและใบหน้าเด็ก (Head)
         g.drawImage(makeEllipseLayer(w, h, 120, 140, 50, 50, hair, false), 0, 0, null);
         g.drawImage(makeEllipseLayer(w, h, 120, 152, 43, 46, skin, R), 0, 0, null);
         g.drawImage(makeCircleLayer(w, h, 79, 158, 9, skin, R), 0, 0, null);
@@ -786,29 +788,29 @@ public class mergeAll extends JPanel {
         Color dark  = new Color(25, 20, 18);
         Color spot  = new Color(150, 22, 16);
 
-        // Feathers behind body
+        // ขนหางและหงอนบนหัวด้านหลัง (Feathers behind body)
         g.drawImage(makePolyLayer(w, h, new int[]{40,52,58}, new int[]{22,4,26}, body, true), 0, 0, null);
         g.drawImage(makePolyLayer(w, h, new int[]{58,72,66}, new int[]{22,10,28}, body, true), 0, 0, null);
         g.drawImage(makePolyLayer(w, h, new int[]{16,6,20}, new int[]{58,66,70}, body, true), 0, 0, null);
         g.drawImage(makePolyLayer(w, h, new int[]{18,8,22}, new int[]{72,80,82}, body, true), 0, 0, null);
 
-        // Body + belly + cheek spots
+        // ลำตัว + ท้อง + จุดกระบนแก้ม (Body + belly + cheek spots)
         g.drawImage(makeCircleLayer(w, h, 56, 64, 46, body, true), 0, 0, null);
         g.drawImage(makeEllipseLayer(w, h, 56, 96, 26, 13, belly, false), 0, 0, null);
         g.drawImage(makeEllipseLayer(w, h, 34, 84, 6, 5, spot, false), 0, 0, null);
         g.drawImage(makeEllipseLayer(w, h, 28, 72, 4, 4, spot, false), 0, 0, null);
 
-        // Eyes
+        // ดวงตา (Eyes)
         g.drawImage(makeEllipseLayer(w, h, 48, 52, 10, 14, white, true), 0, 0, null);
         g.drawImage(makeEllipseLayer(w, h, 68, 52, 10, 14, white, true), 0, 0, null);
         g.drawImage(makeCircleLayer(w, h, 52, 54, 4, dark, false), 0, 0, null);
         g.drawImage(makeCircleLayer(w, h, 64, 54, 4, dark, false), 0, 0, null);
 
-        // Angry eyebrows
+        // คิ้วโกรธ (Angry eyebrows)
         g.drawImage(makePolyLayer(w, h, new int[]{34,52,54,36}, new int[]{34,46,52,40}, dark, false), 0, 0, null);
         g.drawImage(makePolyLayer(w, h, new int[]{82,64,62,80}, new int[]{34,46,52,40}, dark, false), 0, 0, null);
 
-        // Beak
+        // จงอยปาก (Beak)
         g.drawImage(makePolyLayer(w, h, new int[]{56,92,58}, new int[]{62,70,72}, beak, true), 0, 0, null);
         g.drawImage(makePolyLayer(w, h, new int[]{56,88,58}, new int[]{74,80,84}, beakD, true), 0, 0, null);
 
@@ -826,18 +828,18 @@ public class mergeAll extends JPanel {
         Color white = new Color(245, 245, 245);
         Color dark  = new Color(30, 40, 25);
 
-        // Ears & head
+        // หูและศีรษะหมู (Ears & head)
         g.drawImage(makeCircleLayer(w, h, 44, 24, 10, body, true), 0, 0, null);
         g.drawImage(makeCircleLayer(w, h, 76, 24, 10, body, true), 0, 0, null);
         g.drawImage(makeCircleLayer(w, h, 60, 66, 44, body, true), 0, 0, null);
 
-        // Eyes
+        // ดวงตา (Eyes)
         g.drawImage(makeCircleLayer(w, h, 46, 54, 11, white, true), 0, 0, null);
         g.drawImage(makeCircleLayer(w, h, 74, 54, 11, white, true), 0, 0, null);
         g.drawImage(makeCircleLayer(w, h, 48, 56, 4, dark, false), 0, 0, null);
         g.drawImage(makeCircleLayer(w, h, 72, 56, 4, dark, false), 0, 0, null);
 
-        // Brows + mouth
+        // คิ้วและปาก (Brows + mouth)
         {
             BufferedImage s = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
             Graphics gs = s.getGraphics();
@@ -849,7 +851,7 @@ public class mergeAll extends JPanel {
             g.drawImage(s, 0, 0, null);
         }
 
-        // Snout + nostrils
+        // จมูกหมูและรูจมูก (Snout + nostrils)
         g.drawImage(makeEllipseLayer(w, h, 60, 74, 18, 14, snout, true), 0, 0, null);
         g.drawImage(makeEllipseLayer(w, h, 53, 74, 2, 4, dark, false), 0, 0, null);
         g.drawImage(makeEllipseLayer(w, h, 67, 74, 2, 4, dark, false), 0, 0, null);
@@ -859,7 +861,7 @@ public class mergeAll extends JPanel {
     }
 
     // =========================================================================
-    // Computer Graphics Primitive Algorithms
+    // อัลกอริทึมกราฟิกคอมพิวเตอร์พื้นฐาน (Computer Graphics Primitive Algorithms)
     // =========================================================================
     public static void bresenham(Graphics g, int x1, int y1, int x2, int y2) {
         int dx = Math.abs(x2 - x1);

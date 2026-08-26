@@ -7,10 +7,10 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 /**
- * Game_Scene — the "gameplay" scene lifted from MyMemoryAnimation (Scene 2):
- * a slingshot shot that clears a pig off a block tower, then "LEVEL COMPLETE!" + 3 stars.
- * The red bird circle is replaced by the DrawBird sprite and the green pig circle by the
- * DrawPig sprite (both drawn with the assignment's own algorithms). Loops.
+ * Game_Scene — ฉากการเล่นเกม (Gameplay)
+ * การยิงหนังสติ๊กเพื่อกำจัดหมูบนหอคอยไม้ แล้วแสดงป้าย "LEVEL COMPLETE!" พร้อมดาวทอง 3 ดวง
+ * วาดด้วย Sprite ของนกแดง (DrawBird) และหมูเขียว (DrawPig)
+ * ที่เรนเดอร์ขึ้นจากอัลกอริทึมกราฟิกพื้นฐานทั้งหมด วนลูปการทำงาน
  */
 public class Game_Scene extends JPanel {
     private final int W, H;
@@ -19,8 +19,8 @@ public class Game_Scene extends JPanel {
 
     private final BufferedImage birdImg, pigImg;
     private final long startTime;
-    private static final int SCENE_MS = 4200;   // one play-through
-    private static final int LOOP_PAUSE = 900;  // hold LEVEL COMPLETE, then loop
+    private static final int SCENE_MS = 4200;   // เวลาเล่นแอนิเมชัน 1 รอบ
+    private static final int LOOP_PAUSE = 900;  // ค้างหน้า LEVEL COMPLETE ไว้ชั่วขณะก่อนวนลูป
 
     public Game_Scene(int width, int height) {
         this.W = width;
@@ -36,7 +36,7 @@ public class Game_Scene extends JPanel {
         new Timer(16, e -> repaint()).start(); // ~60fps
     }
 
-    // ---------- math / easing helpers (ported from MyMemoryAnimation) ----------
+    // ---------- ฟังก์ชันคำนวณและ Easing Helpers ----------
     private float clamp(float v, float lo, float hi) { return Math.max(lo, Math.min(hi, v)); }
     private float lerp(float a, float b, float t) { return a + (b - a) * t; }
     private float easeOutQuad(float t) { return 1 - (1 - t) * (1 - t); }
@@ -71,7 +71,7 @@ public class Game_Scene extends JPanel {
         g2.drawPolygon(star);
     }
 
-    // blit a sprite centred at (cx,cy), scaled to a square of the given size
+    // วาดรูปสไปรต์โดยจัดให้อยู่กึ่งกลางพิกัด (cx, cy) และปรับสเกลตามขนาดที่กำหนด
     private void drawSprite(Graphics2D g2, BufferedImage img, float cx, float cy, int size) {
         g2.drawImage(img, Math.round(cx - size / 2f), Math.round(cy - size / 2f), size, size, null);
     }
@@ -85,12 +85,12 @@ public class Game_Scene extends JPanel {
 
         long cycle = SCENE_MS + LOOP_PAUSE;
         long phase = (System.currentTimeMillis() - startTime) % cycle;
-        float t = clamp(phase / (float) SCENE_MS, 0f, 1f); // holds at 1 during the pause
+        float t = clamp(phase / (float) SCENE_MS, 0f, 1f); // คงค่าไว้ที่ 1 ในช่วงหยุดพัก
 
         drawGameplay(g2, t);
     }
 
-    // ========== gameplay: slingshot shot clears the pig, then LEVEL COMPLETE + stars ==========
+    // ========== เกมเพลย์: ยิงหนังสติ๊กเพื่อกำจัดหมู แล้วแสดงป้าย LEVEL COMPLETE + ดาว ==========
     private void drawGameplay(Graphics2D g2, float t) {
         g2.setPaint(new GradientPaint(0, 0, new Color(140, 190, 230), 0, H, new Color(210, 230, 240)));
         g2.fillRect(0, 0, W, H);
@@ -112,11 +112,12 @@ public class Game_Scene extends JPanel {
         };
         int pigX = towerX + 40, pigY = H - groundH - 130;
 
-        float shotT = clamp(t / 0.5f, 0, 1); // shot sequence packed into first half of the scene
+        float shotT = clamp(t / 0.5f, 0, 1); // ลำดับการยิงจัดอยู่ในช่วงครึ่งแรกของฉาก
         float birdX, birdY;
         boolean impactDone = t >= 0.5f;
 
         if (shotT < 0.18f) {
+            // ดึงหนังสติ๊กถอยหลัง (Pullback)
             float pt = easeOutQuad(shotT / 0.18f);
             birdX = lerp(slingX, slingX - 55, pt);
             birdY = lerp(slingBaseY - 75, slingBaseY - 50, pt);
@@ -125,12 +126,14 @@ public class Game_Scene extends JPanel {
             g2.drawLine(slingX - 18, slingBaseY - 105, (int) birdX, (int) birdY);
             g2.drawLine(slingX + 18, slingBaseY - 105, (int) birdX, (int) birdY);
         } else if (shotT < 0.55f) {
+            // นกพุ่งลอยในอากาศตามวิถีโค้งพาราโบลา (Parabolic flight)
             float ft = (shotT - 0.18f) / 0.37f;
             float startX = slingX - 55, startY = slingBaseY - 50;
             birdX = lerp(startX, pigX, ft);
             float straightY = lerp(startY, pigY, ft);
             birdY = straightY - (float) Math.sin(ft * Math.PI) * 180;
         } else {
+            // การพุ่งชนและเกิดการทำลายล้าง (Impact & Destruction)
             float it = clamp((shotT - 0.55f) / 0.45f, 0, 1);
             birdX = pigX; birdY = pigY;
 
@@ -153,18 +156,18 @@ public class Game_Scene extends JPanel {
                     g2.fillOval((int) (pigX + Math.cos(ang) * dist) - 5, (int) (pigY + Math.sin(ang) * dist) - 5, 10, 10);
                 }
             }
-            drawSprite(g2, birdImg, birdX, birdY, 48);   // bird lands on the pig
+            drawSprite(g2, birdImg, birdX, birdY, 48);   // นกลงตรงจุดชนหมู
         }
 
         if (shotT < 0.55f) {
-            // pre-impact: draw intact blocks, pig, bird
+            // ก่อนการพุ่งชน: วาดบล็อกไม้ที่ยังสมบูรณ์, หมู, และนก
             g2.setColor(new Color(150, 100, 50));
             for (Rectangle b : blocks) g2.fillRect(b.x, b.y, b.width, b.height);
             drawSprite(g2, pigImg, pigX, pigY, 56);
             drawSprite(g2, birdImg, birdX, birdY, 48);
         }
 
-        // "LEVEL COMPLETE" panel + 3 stars, once the shot has landed
+        // ป้าย "LEVEL COMPLETE!" และดาว 3 ดวง เมื่อนกพุ่งชนเป้าหมายแล้ว
         if (impactDone) {
             float panelT = clamp((t - 0.5f) / 0.12f, 0, 1);
             float panelScale = easeOutBack(panelT);

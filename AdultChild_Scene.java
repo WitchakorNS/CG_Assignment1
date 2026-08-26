@@ -8,25 +8,25 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 /**
- * AdultChild_Scene — a looping animation in which the adult figure (DrawAdult)
- * transforms into the child figure (DrawChild). The transition is a white flash
- * plus expanding "memory rings" (drawn with the midpointCircle algorithm) while the
- * two figures cross-fade, feet aligned.
+ * AdultChild_Scene — แอนิเมชันแบบวนลูปที่ตัวละครผู้ใหญ่ (DrawAdult)
+ * เปลี่ยนผ่าน (Morph) กลายเป็นตัวละครในวัยเด็ก (DrawChild)
+ * มีเอฟเฟกต์แสงวาบสีขาว (White flash) และวงแหวนคลื่นความทรงจำ (Memory rings)
+ * ที่วาดด้วยอัลกอริทึม midpointEllipse ขณะที่ตัวละครทั้งสองค่อย ๆ Cross-fade เข้าหากัน
  *
- * Timeline per cycle:
- *   0.0-1.2s  hold the adult
- *   1.2-2.8s  transform: cross-fade adult -> child, white flash, memory rings
- *   2.8-4.2s  hold the child
- *   + short pause, then loop
+ * ช่วงเวลาของ Timeline ในแต่ละรอบ:
+ *   0.0-1.2s  แสดงภาพผู้ใหญ่
+ *   1.2-2.8s  ช่วงเปลี่ยนผ่าน: Cross-fade ผู้ใหญ่ -> เด็ก, แสงวาบสีขาว, วงแหวนความทรงจำ
+ *   2.8-4.2s  แสดงภาพเด็ก
+ *   + หยุดพักสั้น ๆ แล้ววนลูปใหม่
  */
 public class AdultChild_Scene extends JPanel {
     private final int W, H;
     private final BufferedImage buf;
     private int penRGB = Color.BLACK.getRGB();
 
-    // figure canvas size, scaled up for a half-body (waist-up) framing
+    // ขนาดของแคนวาสตัวละคร ซูมขึ้นเพื่อให้เห็นภาพครึ่งตัว (เอวขึ้นไป)
     private static final int FW = 240, FH = 440;
-    private static final float SCALE = 1.65f;             // zoom in so we see the upper half
+    private static final float SCALE = 1.65f;             // ซูมเข้าเพื่อให้เห็นช่วงลำตัวด้านบนชัดเจน
     private final int figX, figY, figW, figH;
     private final BufferedImage adultImg, childImg;
 
@@ -43,18 +43,18 @@ public class AdultChild_Scene extends JPanel {
         setPreferredSize(new Dimension(W, H));
         setBackground(Color.BLACK);
 
-        this.adultImg = new DrawAdult(FW, FH).render(true);  // clean: no black rims, no baked mouth
+        this.adultImg = new DrawAdult(FW, FH).render(true);  // clean: ไม่มีเส้นขอบหนา และไม่มีปากที่วาดทับไว้ก่อน
         this.childImg = new DrawChild(FW, FH).render(true);
         this.figW = Math.round(FW * SCALE);
         this.figH = Math.round(FH * SCALE);
-        this.figX = (W - figW) / 2;                 // centred horizontally
-        this.figY = 40 - Math.round(30 * SCALE);    // head near the top; legs fall off the bottom
+        this.figX = (W - figW) / 2;                 // จัดให้อยู่ตรงกลางแนวนอน
+        this.figY = 40 - Math.round(30 * SCALE);    // ศีรษะอยู่ใกล้ด้านบน ส่วนขาเลยขอบล่างของเฟรม
 
         this.startTime = System.currentTimeMillis();
         new Timer(16, e -> repaint()).start(); // ~60fps
     }
 
-    // ---------- small math helpers ----------
+    // ---------- ฟังก์ชันคำนวณพื้นฐาน (Math helpers) ----------
     private float clamp(float v, float lo, float hi) { return Math.max(lo, Math.min(hi, v)); }
     private float clamp01(float v) { return clamp(v, 0f, 1f); }
     private float lerp(float a, float b, float t) { return a + (b - a) * t; }
@@ -69,23 +69,23 @@ public class AdultChild_Scene extends JPanel {
         long cycle = SHOW_CHILD_END + LOOP_PAUSE;
         long t = (System.currentTimeMillis() - startTime) % cycle;
 
-        // --- phase → cross-fade / flash / ring progress ---
+        // --- ความคืบหน้าของสถานะ -> Cross-fade / Flash / Ring progress ---
         float adultAlpha, childAlpha, morph;
         if (t < SHOW_ADULT_END)      { adultAlpha = 1f; childAlpha = 0f; morph = 0f; }
         else if (t < MORPH_END)      { morph = (t - SHOW_ADULT_END) / (float) (MORPH_END - SHOW_ADULT_END);
                                        adultAlpha = 1f - morph; childAlpha = morph; }
         else                         { adultAlpha = 0f; childAlpha = 1f; morph = 1f; }
 
-        // smile grows over the first ~0.9s, then holds (like MyMemory's `smile`)
+        // รอยยิ้มค่อย ๆ กว้างขึ้นในช่วง 0.9s แรก แล้วคงที่ไว้
         float smile = clamp01(t / 900f);
 
-        // --- background: dim/cool -> warm sepia memory tone (MyMemory Scene 3) ---
+        // --- พื้นหลัง: โทนเย็นสลัว -> เปลี่ยนเป็นโทนอุ่นซีเปียแห่งความทรงจำ (Warm sepia memory tone) ---
         float warm = morph;
         int br = (int) lerp(40, 235, warm), bgc = (int) lerp(44, 215, warm), bb = (int) lerp(62, 175, warm);
         g2.setColor(new Color(br, bgc, bb));
         g2.fillRect(0, 0, W, H);
 
-        // --- soft radial glow behind the face ---
+        // --- แสงฟุ้งรอบใบหน้า (Radial Glow) ---
         int gcx = W / 2, gcy = figY + Math.round(110 * SCALE);
         RadialGradientPaint glow = new RadialGradientPaint(new Point2D.Float(gcx, gcy), 240,
                 new float[]{0f, 1f},
@@ -93,31 +93,31 @@ public class AdultChild_Scene extends JPanel {
         g2.setPaint(glow);
         g2.fillOval(gcx - 240, gcy - 240, 480, 480);
 
-        // --- figures + overlaid animated smiles, cross-faded ---
-        float amx = figX + 120 * SCALE, amy = figY + 136 * SCALE;   // adult mouth (screen space)
-        float cmx = figX + 121 * SCALE, cmy = figY + 176 * SCALE;   // child mouth
+        // --- ตัวละคร + เลเยอร์รอยยิ้มแบบแอนิเมชัน (Cross-faded) ---
+        float amx = figX + 120 * SCALE, amy = figY + 136 * SCALE;   // ตำแหน่งปากผู้ใหญ่ (Screen space)
+        float cmx = figX + 121 * SCALE, cmy = figY + 176 * SCALE;   // ตำแหน่งปากเด็ก
         drawFigure(g2, adultImg, adultAlpha);
-        drawSmile(g2, amx, amy, 15 * SCALE, smile, adultAlpha, new Color(190, 105, 90)); // light: shows on beard
+        drawSmile(g2, amx, amy, 15 * SCALE, smile, adultAlpha, new Color(190, 105, 90)); // สีโทนสว่างเพื่อให้เห็นบนเครา
         drawFigure(g2, childImg, childAlpha);
         drawSmile(g2, cmx, cmy, 17 * SCALE, 0.6f + 0.4f * smile, childAlpha, new Color(90, 35, 30));
 
-        // --- white flash: peaks in the middle of the morph ---
+        // --- แสงวาบสีขาว: สว่างสูงสุดตรงกึ่งกลางของการ Morph ---
         if (morph > 0f && morph < 1f) {
             float flash = (float) Math.sin(morph * Math.PI);
             g2.setColor(new Color(255, 255, 255, (int) (200 * flash)));
             g2.fillRect(0, 0, W, H);
 
-            // --- smooth memory rings drawn with the midpointEllipse algorithm ---
+            // --- วงแหวนคลื่นความทรงจำ (วาดด้วยอัลกอริทึม midpointEllipse) ---
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
             int cx = W / 2, cy = gcy;
             for (int i = 0; i < 3; i++) {
                 float rt = clamp01(morph - i * 0.18f);
                 if (rt <= 0f || rt >= 1f) continue;
                 int r = (int) (rt * 280);
-                if (r < 3) continue;   // keep all three passes (r, r-1, r-2) >= 1
+                if (r < 3) continue;   // รักษาให้ทั้ง 3 รอบ (r, r-1, r-2) >= 1
                 int a = (int) (150 * (1 - rt));
                 useColor(g2, new Color(255, 255, 255, a));
-                midpointEllipse(g2, cx, cy, r, r);           // 3 concentric passes -> solid, no dashes
+                midpointEllipse(g2, cx, cy, r, r);           // วาด 3 รอบซ้อนกันเพื่อให้เส้นทึบชัดเจน
                 midpointEllipse(g2, cx, cy, r - 1, r - 1);
                 midpointEllipse(g2, cx, cy, r - 2, r - 2);
             }
