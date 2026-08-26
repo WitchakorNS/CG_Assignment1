@@ -219,6 +219,125 @@ public class DrawBird {
         for (int y = 0; y < H; y++) buf.getRaster().setDataElements(0, y, W, 1, row);
     }
 
+    // ===================== figure rendering =====================
+    private static final Color TRANSPARENT = new Color(0, 0, 0, 0);
+    private static final Color OUTLINE     = new Color(25, 20, 18);
+
+    private int sgn(int v) { return Integer.compare(v, 0); }
+    private BufferedImage newLayer() { return new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB); }
+    private BufferedImage strokeLayer() { return newLayer(); }
+
+    // A solid ellipse on its own transparent layer: seal the border with a couple of
+    // concentric passes (so the 4-connected floodFill can't leak out), then flood-fill.
+    private BufferedImage ellipseLayer(int cx, int cy, int a, int b, Color fill, boolean rim) {
+        BufferedImage s = newLayer();
+        Graphics gs = s.getGraphics();
+        useColor(gs, fill);
+        midpointEllipse(gs, cx, cy, a, b);
+        midpointEllipse(gs, cx, cy, a - 1, b);
+        midpointEllipse(gs, cx, cy, a, b - 1);
+        midpointEllipse(gs, cx, cy, a - 1, b - 1);
+        floodFill(s, cx, cy, TRANSPARENT, fill);
+        if (rim) { useColor(gs, OUTLINE); midpointEllipse(gs, cx, cy, a, b); }
+        gs.dispose();
+        return s;
+    }
+
+    private BufferedImage circleLayer(int cx, int cy, int r, Color fill, boolean rim) {
+        BufferedImage s = newLayer();
+        Graphics gs = s.getGraphics();
+        useColor(gs, fill);
+        midpointCircle(gs, cx, cy, r);
+        midpointCircle(gs, cx, cy, r - 1);
+        floodFill(s, cx, cy, TRANSPARENT, fill);
+        if (rim) { useColor(gs, OUTLINE); midpointCircle(gs, cx, cy, r); }
+        gs.dispose();
+        return s;
+    }
+
+    // A solid convex polygon: each edge is drawn twice (once nudged toward the centroid)
+    // so the outline is watertight, then the interior is flood-filled from the centroid.
+    private BufferedImage polyLayer(int[] xs, int[] ys, Color fill, boolean rim) {
+        BufferedImage s = newLayer();
+        Graphics gs = s.getGraphics();
+        int n = xs.length;
+        long sx = 0, sy = 0;
+        for (int i = 0; i < n; i++) { sx += xs[i]; sy += ys[i]; }
+        int cx = (int) (sx / n), cy = (int) (sy / n);
+        useColor(gs, fill);
+        for (int i = 0; i < n; i++) {
+            int j = (i + 1) % n;
+            bresenhamLine(gs, xs[i], ys[i], xs[j], ys[j]);
+            bresenhamLine(gs, xs[i] + sgn(cx - xs[i]), ys[i] + sgn(cy - ys[i]),
+                              xs[j] + sgn(cx - xs[j]), ys[j] + sgn(cy - ys[j]));
+        }
+        floodFill(s, cx, cy, TRANSPARENT, fill);
+        if (rim) {
+            useColor(gs, OUTLINE);
+            for (int i = 0; i < n; i++) { int j = (i + 1) % n; bresenhamLine(gs, xs[i], ys[i], xs[j], ys[j]); }
+        }
+        gs.dispose();
+        return s;
+    }
+
+    /** Draws the Angry-Birds "Red" bird into an ARGB image (transparent bg) and returns it. */
+    public BufferedImage render() {
+        fillBuffer(0x00000000);
+        BufferedImage out = newLayer();
+        Graphics2D g = (Graphics2D) out.getGraphics();
+
+        Color body  = new Color(220, 30, 20);
+        Color belly = new Color(232, 182, 140);
+        Color beak  = new Color(245, 180, 30);
+        Color beakD = new Color(210, 140, 20);
+        Color white = new Color(245, 245, 245);
+        Color dark  = new Color(25, 20, 18);
+        Color spot  = new Color(150, 22, 16);
+
+        // ---- feathers behind the body ----
+        g.drawImage(polyLayer(new int[]{40,52,58}, new int[]{22,4,26}, body, true), 0, 0, null);   // tuft L
+        g.drawImage(polyLayer(new int[]{58,72,66}, new int[]{22,10,28}, body, true), 0, 0, null);   // tuft R
+        g.drawImage(polyLayer(new int[]{16,6,20},  new int[]{58,66,70}, body, true), 0, 0, null);   // tail 1
+        g.drawImage(polyLayer(new int[]{18,8,22},  new int[]{72,80,82}, body, true), 0, 0, null);   // tail 2
+
+        // ---- body + belly ----
+        g.drawImage(circleLayer(56, 64, 46, body, true), 0, 0, null);
+        g.drawImage(ellipseLayer(56, 96, 26, 13, belly, false), 0, 0, null);
+        g.drawImage(ellipseLayer(34, 84, 6, 5, spot, false), 0, 0, null);          // cheek spots
+        g.drawImage(ellipseLayer(28, 72, 4, 4, spot, false), 0, 0, null);
+
+        // ---- eyes ----
+        g.drawImage(ellipseLayer(48, 52, 10, 14, white, true), 0, 0, null);
+        g.drawImage(ellipseLayer(68, 52, 10, 14, white, true), 0, 0, null);
+        g.drawImage(circleLayer(52, 54, 4, dark, false), 0, 0, null);              // pupils (inner)
+        g.drawImage(circleLayer(64, 54, 4, dark, false), 0, 0, null);
+
+        // ---- angry eyebrows (thick slanted quads, down-inward) ----
+        g.drawImage(polyLayer(new int[]{34,52,54,36}, new int[]{34,46,52,40}, dark, false), 0, 0, null);
+        g.drawImage(polyLayer(new int[]{82,64,62,80}, new int[]{34,46,52,40}, dark, false), 0, 0, null);
+
+        // ---- beak: open, pointing right ----
+        g.drawImage(polyLayer(new int[]{56,92,58}, new int[]{62,70,72}, beak, true), 0, 0, null);   // upper
+        g.drawImage(polyLayer(new int[]{56,88,58}, new int[]{74,80,84}, beakD, true), 0, 0, null);  // lower
+
+        g.dispose();
+        return out;
+    }
+
+    public static void main(String[] args) {
+        DrawBird d = new DrawBird(120, 120);
+        final BufferedImage img = d.render();
+        JFrame f = new JFrame("Bird");
+        f.add(new JPanel() {
+            { setBackground(Color.WHITE); setPreferredSize(new Dimension(120, 120)); }
+            protected void paintComponent(Graphics g) { super.paintComponent(g); g.drawImage(img, 0, 0, null); }
+        });
+        f.pack();
+        f.setLocationRelativeTo(null);
+        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        f.setVisible(true);
+    }
+
     class Point {
         public int x, y;
         public Point(int x, int y) { this.x = x; this.y = y; }
