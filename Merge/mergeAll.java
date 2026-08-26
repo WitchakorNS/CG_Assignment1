@@ -9,22 +9,22 @@ import java.util.Queue;
 
 /**
  * ลำดับการเล่น (Sequence):
- *   1. AdultChild_Scene (0.0s - 4.8s): ผู้ใหญ่ยิ้ม -> Flashback / Morph กลายเป็นเด็ก พร้อมวงแหวนความทรงจำ
- *   2. GameEnter_Scene  (4.8s - 8.0s): เมนู Angry Birds 2013 บนหน้าจอ Monitor -> เลื่อนเคอร์เซอร์เมาส์ไปคลิกปุ่ม PLAY -> Fade out
- *   3. Game_Scene       (8.0s - 14.0s): หนังสติ๊กยิงนกวิถีพาราโบลา -> ทำลายหอคอยบล็อกไม้และหมู -> ป้าย LEVEL COMPLETE + ดาว 3 ดวง
+ *   1. GameEnter_Scene  (0.0s - 3.2s): เมนู Angry Birds 2013 บนหน้าจอ Monitor -> เลื่อนเคอร์เซอร์เมาส์ไปคลิกปุ่ม PLAY -> Fade out
+ *   2. Game_Scene       (3.2s - 9.2s): หนังสติ๊กยิงนกวิถีพาราโบลา -> ทำลายหอคอยบล็อกไม้และหมู -> ป้าย LEVEL COMPLETE + ดาว 3 ดวง
+ *   3. AdultChild_Scene (9.2s - 14.0s): ผู้ใหญ่ยิ้ม -> Flashback / Morph กลายเป็นเด็ก พร้อมวงแหวนความทรงจำ
  *
  * วนลูปการทำงานอัตโนมัติอย่างต่อเนื่อง
  */
 public class mergeAll extends JPanel {
     private static final int W = 600, H = 600;
 
-    // แอสเซทโมเดลรูปคนสำหรับ Scene 1
+    // แอสเซทโมเดลรูปคน
     private static final int FW = 240, FH = 440;
     private static final float SCALE = 1.65f;
     private final int figX, figY, figW, figH;
     private final BufferedImage adultImg, childImg;
 
-    // แอสเซทสไปรต์ (Sprite) สำหรับ Scene 3
+    // แอสเซทสไปรต์ (Sprite)
     private final BufferedImage birdImg, pigImg;
 
     private final long startTime;
@@ -49,6 +49,11 @@ public class mergeAll extends JPanel {
     private static final int S3_HOLD  = 13200;
     private static final int TOTAL_CYCLE = 14000;
 
+    // ลำดับการเล่นใหม่: GameEnter -> Game -> AdultChild
+    // (map เวลาจริงในรอบ [0, TOTAL_CYCLE) ไปยังฟังก์ชันเดิมของแต่ละ Scene โดยไม่แก้เนื้อในแต่ละ Scene)
+    private static final int ORDER_GAMEENTER_END = S2_END - S1_FADE;                       // 3200: GameEnter เล่นก่อน
+    private static final int ORDER_GAME_END = ORDER_GAMEENTER_END + (TOTAL_CYCLE - S2_END); // 9200: ตามด้วย Game (ที่เหลือเป็น AdultChild)
+
     // ขนาดความละเอียดเชิงตรรกะสำหรับหน้าจอ Monitor ใน Scene 2
     private static final int SW = 640, SH = 360;
 
@@ -56,7 +61,7 @@ public class mergeAll extends JPanel {
         setPreferredSize(new Dimension(W, H));
         setBackground(Color.BLACK);
 
-        // เรนเดอร์แอสเซทสไปรต์ล่วงหน้าด้วยอัลกอริทึมภายในคลาส (ทำงานได้ด้วยตัวเอง 100%)
+        // เรนเดอร์แอสเซทสไปรต์ล่วงหน้าด้วยอัลกอริทึมภายในคลาส
         this.adultImg = renderAdult(FW, FH, true);
         this.childImg = renderChild(FW, FH, true);
         this.birdImg  = renderBird(120, 120);
@@ -68,7 +73,7 @@ public class mergeAll extends JPanel {
         this.figY = 40 - Math.round(30 * SCALE);
 
         this.startTime = System.currentTimeMillis();
-        new Timer(16, e -> repaint()).start(); // ~60fps
+        new Timer(16, e -> repaint()).start();
     }
 
     // ===================== ฟังก์ชันคำนวณและ Easing Helpers =====================
@@ -130,20 +135,20 @@ public class mergeAll extends JPanel {
         long elapsed = System.currentTimeMillis() - startTime;
         long t = elapsed % TOTAL_CYCLE;
 
-        if (t < S1_FADE) {
-            drawScene1(g2, t);
-        } else if (t < S2_END) {
-            drawScene2(g2, t);
+        if (t < ORDER_GAMEENTER_END) {
+            drawScene1(g2, t + S1_FADE);              // GameEnter_Scene (เล่นเป็นลำดับที่ 1)
+        } else if (t < ORDER_GAME_END) {
+            drawScene2(g2, t + S1_FADE);              // Game_Scene (ลำดับที่ 2)
         } else {
-            drawScene3(g2, t);
+            drawScene3(g2, t - ORDER_GAME_END);       // AdultChild_Scene (ลำดับที่ 3)
         }
     }
 
     // =========================================================================
-    // SCENE 1: AdultChild_Scene (0.0s - 4.8s)
+    // SCENE 3: AdultChild_Scene (9.2s - 14.0s)
     // ผู้ใหญ่ยิ้ม -> แสงวาบสีขาว & วงแหวน Midpoint Ellipse -> Morph กลายเป็นเด็ก
     // =========================================================================
-    private void drawScene1(Graphics2D g2, long t) {
+    private void drawScene3(Graphics2D g2, long t) {
         float adultAlpha, childAlpha, morph;
         if (t < S1_MORPH) {
             adultAlpha = 1f; childAlpha = 0f; morph = 0f;
@@ -157,13 +162,13 @@ public class mergeAll extends JPanel {
 
         float smile = clamp01(t / 900f);
 
-        // พื้นหลัง: โทนเย็นสลัว -> เปลี่ยนเป็นโทนอุ่นซีเปียแห่งความทรงจำ (Warm sepia memory tone)
+        // พื้นหลัง: โทนเย็นสลัว -> เปลี่ยนเป็นโทนอุ่นแห่งความทรงจำ
         float warm = morph;
         int br = (int) lerp(40, 235, warm), bgc = (int) lerp(44, 215, warm), bb = (int) lerp(62, 175, warm);
         g2.setColor(new Color(br, bgc, bb));
         g2.fillRect(0, 0, W, H);
 
-        // แสงฟุ้งรอบใบหน้า (Radial Glow)
+        // แสงฟุ้งรอบใบหน้า
         int gcx = W / 2, gcy = figY + Math.round(110 * SCALE);
         RadialGradientPaint glow = new RadialGradientPaint(new Point2D.Float(gcx, gcy), 240,
                 new float[]{0f, 1f},
@@ -233,7 +238,7 @@ public class mergeAll extends JPanel {
     // SCENE 2: GameEnter_Scene (4.8s - 8.0s)
     // หน้าจอคอมพิวเตอร์ -> หน้าเมนู Angry Birds 2013 -> เคอร์เซอร์เมาส์คลิกปุ่ม PLAY -> Fade Out
     // =========================================================================
-    private void drawScene2(Graphics2D g2, long t) {
+    private void drawScene1(Graphics2D g2, long t) {
         boolean clicking = t >= S2_CLICK && t < S2_CLICK + 350;
 
         int mw = (int) (W * 0.8f);              // 480
@@ -429,7 +434,7 @@ public class mergeAll extends JPanel {
     // SCENE 3: Game_Scene (8.0s - 14.0s)
     // หนังสติ๊กยิงนก -> วิถีพาราโบลา -> หอคอยไม้พัง & กำจัดหมู -> ป้าย LEVEL COMPLETE + ดาว 3 ดวง
     // =========================================================================
-    private void drawScene3(Graphics2D g2, long t) {
+    private void drawScene2(Graphics2D g2, long t) {
         g2.setPaint(new GradientPaint(0, 0, new Color(140, 190, 230), 0, H, new Color(210, 230, 240)));
         g2.fillRect(0, 0, W, H);
         int groundH = 80;
