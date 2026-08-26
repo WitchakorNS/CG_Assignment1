@@ -25,7 +25,7 @@ public class GameEnter_Scene extends JPanel {
         new Timer(16, e -> repaint()).start(); // ~60fps
     }
 
-    // ---------- math / cursor helpers (from MyMemoryAnimation) ----------
+    // ---------- ฟังก์ชันคำนวณและเคอร์เซอร์เมาส์ (Math / Cursor helpers) ----------
     private float clamp(float v, float lo, float hi) { return Math.max(lo, Math.min(hi, v)); }
     private float lerp(float a, float b, float t) { return a + (b - a) * t; }
     private float easeInOutQuad(float t) { return t < 0.5f ? 2 * t * t : 1 - (float) Math.pow(-2 * t + 2, 2) / 2; }
@@ -45,46 +45,46 @@ public class GameEnter_Scene extends JPanel {
 
         long cycle = MENU_MS + LOOP_PAUSE;
         long phase = (System.currentTimeMillis() - startTime) % cycle;
-        float t = clamp(phase / (float) MENU_MS, 0f, 1f); // holds at 1 during the pause
+        float t = clamp(phase / (float) MENU_MS, 0f, 1f); // คงค่าไว้ที่ 1 ในช่วงหยุดพัก
         drawMenu(g2, t);
     }
 
-    // logical resolution the menu content is drawn in, then scaled onto the monitor screen
+    // ขนาดความละเอียดเชิงตรรกะสำหรับวาดเมนู ก่อนถูกสเกลลงบนจอ Monitor
     private static final int SW = 640, SH = 360;
 
-    // ============ desktop: the Angry-Birds menu on a monitor, cursor clicks PLAY -> game ============
+    // ============ Desktop: หน้าเมนู Angry Birds บนจอคอมพิวเตอร์, เลื่อนเคอร์เซอร์ไปคลิกปุ่ม PLAY -> เข้าสู่เกม ============
     private void drawMenu(Graphics2D g2, float t) {
         boolean clicking = t > 0.55f && t < 0.68f;
 
-        int mw = (int) (W * 0.8f);              // 480 when W=600
-        int mh = (int) (mw * (SH / (float) SW)); // 270 (16:9 aspect ratio)
+        int mw = (int) (W * 0.8f);              // 480 เมื่อ W=600
+        int mh = (int) (mw * (SH / (float) SW)); // 270 (อัตราส่วน 16:9)
         int mx = (W - mw) / 2;                  // 60
         int my = (int) (H * 0.20f);             // 120
-        int deskY = my + mh + 14 + 60;          // 464 (monitor sits cleanly on desk)
+        int deskY = my + mh + 14 + 60;          // 464 (จอตั้งอยู่บนโต๊ะอย่างพอดี)
 
-        // --- dim room + desk ---
+        // --- บรรยากาศห้องมืดสลัว + โต๊ะไม้ ---
         g2.setColor(new Color(30, 30, 36));
         g2.fillRect(0, 0, W, H);
         g2.setColor(new Color(60, 45, 35));
         g2.fillRect(0, deskY, W, H - deskY);
         g2.setColor(new Color(45, 32, 24));
-        g2.fillRect(0, deskY, W, 6); // desk top rim shadow
+        g2.fillRect(0, deskY, W, 6); // ขอบเงาด้านบนของโต๊ะ
 
-        // --- monitor bezel + stand ---
+        // --- ขอบจอ Monitor + ขาตั้งจอ ---
         g2.setColor(new Color(35, 35, 38));
         g2.fillRoundRect(mx - 14, my - 14, mw + 28, mh + 28, 16, 16);
-        g2.fillRect(W / 2 - 20, my + mh + 14, 40, deskY - (my + mh + 14)); // stand neck
-        g2.fillRoundRect(W / 2 - 70, deskY - 14, 140, 14, 8, 8);           // stand base
+        g2.fillRect(W / 2 - 20, my + mh + 14, 40, deskY - (my + mh + 14)); // คอขาตั้งจอ
+        g2.fillRoundRect(W / 2 - 70, deskY - 14, 140, 14, 8, 8);           // ฐานขาตั้งจอ
 
-        // --- menu content drawn inside the screen (logical SWxSH scaled to fit) ---
+        // --- เนื้อหาเมนูเกมที่วาดภายในจอ Monitor (พิกัดเชิงตรรกะ SWxSH ถูกสเกลให้พอดี) ---
         double sx = mw / (double) SW, sy = mh / (double) SH;
-        Graphics2D gs = (Graphics2D) g2.create(mx, my, mw, mh); // clips to the screen
+        Graphics2D gs = (Graphics2D) g2.create(mx, my, mw, mh); // ตัดขอบให้อยู่เฉพาะในจอ
         gs.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         gs.scale(sx, sy);
         drawScreenContent(gs, t, clicking);
         gs.dispose();
 
-        // --- cursor eases up to the PLAY button (window space), presses on click ---
+        // --- เคอร์เซอร์เมาส์เคลื่อนที่ขึ้นไปยังปุ่ม PLAY และยุบตัวลงเมื่อคลิก ---
         float btnWX = (float) (mx + (SW / 2) * sx);
         float btnWY = (float) (my + 178 * sy);
         float moveT = easeInOutQuad(clamp(t / 0.55f, 0, 1));
@@ -97,7 +97,7 @@ public class GameEnter_Scene extends JPanel {
         g2.setStroke(new BasicStroke(1.2f));
         g2.drawPolygon(buildCursor(curX, curY, pressScale));
 
-        // --- fade to black: the cut into the game ---
+        // --- ค่อย ๆ ดับมืด (Fade to black) เพื่อตัดเข้าสู่เกมเพลย์ ---
         if (t > 0.68f) {
             int alpha = (int) (255 * clamp((t - 0.68f) / 0.30f, 0, 1));
             g2.setColor(new Color(0, 0, 0, alpha));
@@ -105,20 +105,20 @@ public class GameEnter_Scene extends JPanel {
         }
     }
 
-    // the Angry-Birds menu, in logical SWxSH coordinates (drawn onto the monitor screen)
+    // หน้าเมนู Angry Birds ตามพิกัดเชิงตรรกะ SWxSH
     private void drawScreenContent(Graphics2D g2, float t, boolean clicking) {
-        // 1. sky (fill a touch past the edges so scaling leaves no seam)
+        // 1. ท้องฟ้า (Sky)
         g2.setPaint(new GradientPaint(0, 0, new Color(140, 200, 225), 0, SH, new Color(205, 234, 238)));
         g2.fillRect(-4, -4, SW + 8, SH + 8);
 
-        // 2. distant faded bushes near the horizon
+        // 2. พุ่มไม้ระยะไกลตรงเส้นขอบฟ้า (Distant bushes)
         g2.setColor(new Color(170, 205, 216));
         for (int bx = 40; bx < SW; bx += 150) {
             g2.fillOval(bx, 250, 90, 70);
             g2.fillRect(bx + 30, 258, 30, 50);
         }
 
-        // 3. ground: grass strip + dark dirt
+        // 3. ผืนดิน: แถบหญ้า + ดินสีเข้ม (Ground & Grass)
         int grassY = 300;
         g2.setColor(new Color(120, 185, 70));
         g2.fillRect(-4, grassY, SW + 8, 26);
@@ -133,28 +133,28 @@ public class GameEnter_Scene extends JPanel {
         g2.setColor(new Color(70, 78, 100));
         for (int px = 30; px < SW; px += 70) g2.fillOval(px, grassY + 34, 14, 9);
 
-        // 4. decorative characters
+        // 4. ตัวละครตกแต่งหน้าเมนู (Decorative characters)
         drawRedBird(g2, 180, 55, 1.0f);
         drawWhiteBird(g2, 108, 288);
         drawYellowBird(g2, 560, 175);
         drawPig(g2, 500, 300, false);
-        drawPig(g2, 600, 298, true);   // king pig (crown)
+        drawPig(g2, 600, 298, true);   // ราชาหมู (King Pig สวมมงกุฎ)
 
-        // 5. "ANGRY BIRDS" logo (white with shadow + outline)
+        // 5. โลโก้ "ANGRY BIRDS" (สีขาวพร้อมเงาและเส้นขอบ)
         g2.setFont(new Font("SansSerif", Font.BOLD, 48));
         String logo = "ANGRY BIRDS";
         FontMetrics fm = g2.getFontMetrics();
         int lx = (SW - fm.stringWidth(logo)) / 2, ly = 100;
         g2.setColor(new Color(60, 90, 120, 120));
-        g2.drawString(logo, lx + 3, ly + 4);               // soft shadow
+        g2.drawString(logo, lx + 3, ly + 4);               // เงาฟุ้งนุ่มนวล
         g2.setColor(new Color(70, 100, 150));
-        for (int dx = -2; dx <= 2; dx++)                    // outline
+        for (int dx = -2; dx <= 2; dx++)                    // เส้นขอบตัวหนังสือ
             for (int dy = -2; dy <= 2; dy++)
                 if (dx != 0 || dy != 0) g2.drawString(logo, lx + dx, ly + dy);
         g2.setColor(Color.WHITE);
         g2.drawString(logo, lx, ly);
 
-        // 6. PLAY button — the original red circle + white play triangle
+        // 6. ปุ่ม PLAY — วงกลมสีแดงพร้อมสามเหลี่ยมสีขาว
         int bcx = SW / 2, bcy = 178, br = 42;
         g2.setColor(clicking ? new Color(255, 90, 60) : new Color(210, 40, 30));
         g2.fillOval(bcx - br, bcy - br, br * 2, br * 2);
@@ -166,7 +166,7 @@ public class GameEnter_Scene extends JPanel {
         int[] ty = {bcy - 24, bcy + 24, bcy};
         g2.fillPolygon(tx, ty, 3);
 
-        // 7. click ripple around the button
+        // 7. วงคลื่นกระเพื่อมจากการคลิก (Click ripple)
         if (t > 0.55f) {
             float rt = clamp((t - 0.55f) / 0.28f, 0, 1);
             int r = (int) (br + 8 + rt * 42);
@@ -176,7 +176,7 @@ public class GameEnter_Scene extends JPanel {
         }
     }
 
-    // ---------- small inline menu characters ----------
+    // ---------- ฟังก์ชันวาดตัวละครตกแต่งหน้าเมนู ------------
     private void drawRedBird(Graphics2D g2, int cx, int cy, float s) {
         int r = (int) (22 * s);
         g2.setColor(new Color(220, 30, 20));

@@ -4,19 +4,19 @@ import java.awt.*;
 import java.awt.geom.*;
 
 /**
- * "My Memory" — 5 second animation, 3 scenes:
- *   Scene 1 (0.0-1.2s): desktop, Angry Birds 2013 menu, cursor moves & clicks PLAY, fade to black
- *   Scene 2 (1.2-3.4s): in-game — slingshot shot clears the pig, "LEVEL COMPLETE" + 3 stars pop up
- *   Scene 3 (3.4-5.0s): cut to the player's adult face, smiling — flashback-crossfades into their childhood face
+ * "My Memory" — แอนิเมชันขนาด 600x600 px รวม 3 ฉาก:
+ *   Scene 1 (0.0-4.8s): ฉาก Adult -> Child Morph พร้อมแสงวาบและวงแหวนความทรงจำ
+ *   Scene 2 (4.8-8.0s): หน้าจอ Monitor เมนู Angry Birds 2013, เลื่อนเมาส์คลิกปุ่ม PLAY, Fade to black
+ *   Scene 3 (8.0-14.0s): เกมเพลย์ — ยิงหนังสติ๊กกำจัดหมู, ป้าย "LEVEL COMPLETE" + ดาว 3 ดวง
  *
- * Loops automatically with a short pause between cycles.
+ * วนลูปการเล่นอัตโนมัติอย่างราบรื่น
  */
 public class MyMemoryAnimation extends JPanel {
 
     private final long startTime;
     private static final int W = 600, H = 600;
 
-    // Timeline markers (ms)
+    // มาร์กเกอร์ช่วงเวลาของ Timeline (ms)
     private static final int S1_END = 4800;  // Adult -> Child morph
     private static final int S2_END = 8000;  // Desktop Menu & click
     private static final int S3_END = 14000; // Gameplay & Level complete
@@ -29,7 +29,7 @@ public class MyMemoryAnimation extends JPanel {
         new Timer(16, e -> repaint()).start(); // ~60fps
     }
 
-    // ---------- small math helpers ----------
+    // ---------- ฟังก์ชันคำนวณพื้นฐาน (Math helpers) ----------
     private float clamp(float v, float lo, float hi) { return Math.max(lo, Math.min(hi, v)); }
     private float clamp01(float v) { return clamp(v, 0f, 1f); }
     private float lerp(float a, float b, float t) { return a + (b - a) * t; }
@@ -90,11 +90,11 @@ public class MyMemoryAnimation extends JPanel {
         } else if (t < S3_END) {
             drawScene2(g2, (t - S2_END) / (float) (S3_END - S2_END)); // 3. Game
         } else {
-            drawScene2(g2, 1f); // hold last frame during pause
+            drawScene2(g2, 1f); // คงภาพเฟรมสุดท้ายไว้ในช่วงหยุดพัก
         }
     }
 
-    // ========== SCENE 1 (0-1.2s): desktop -> click PLAY -> fade out ==========
+    // ========== SCENE 2: หน้าจอ Desktop -> คลิกปุ่ม PLAY -> Fade Out ==========
     private void drawScene1(Graphics2D g2, float t) {
         int mw = (int) (W * 0.8f);              // 480
         int mh = (int) (mw * (360 / 640.0f));   // 270
@@ -102,7 +102,7 @@ public class MyMemoryAnimation extends JPanel {
         int my = (int) (H * 0.20f);             // 120
         int deskY = my + mh + 14 + 60;          // 464
 
-        // dim room behind the monitor + desk
+        // บรรยากาศห้องมืดสลัวหลังจอ Monitor + โต๊ะไม้
         g2.setColor(new Color(30, 30, 36));
         g2.fillRect(0, 0, W, H);
         g2.setColor(new Color(60, 45, 35));
@@ -110,13 +110,13 @@ public class MyMemoryAnimation extends JPanel {
         g2.setColor(new Color(45, 32, 24));
         g2.fillRect(0, deskY, W, 6);
 
-        // monitor bezel & stand
+        // ขอบจอ Monitor & ขาตั้งจอ
         g2.setColor(new Color(35, 35, 38));
         g2.fillRoundRect(mx - 14, my - 14, mw + 28, mh + 28, 16, 16);
-        g2.fillRect(W / 2 - 20, my + mh + 14, 40, deskY - (my + mh + 14)); // stand neck
-        g2.fillRoundRect(W / 2 - 70, deskY - 14, 140, 14, 8, 8);           // stand base
+        g2.fillRect(W / 2 - 20, my + mh + 14, 40, deskY - (my + mh + 14)); // คอขาตั้ง
+        g2.fillRoundRect(W / 2 - 70, deskY - 14, 140, 14, 8, 8);           // ฐานขาตั้ง
 
-        // screen: Angry Birds 2013 menu
+        // หน้าจอ: เมนูเกม Angry Birds 2013
         g2.setPaint(new GradientPaint(mx, my, new Color(120, 175, 220), mx, my + mh, new Color(200, 225, 235)));
         g2.fillRect(mx, my, mw, mh);
         g2.setColor(new Color(255, 255, 255, 160));
@@ -142,7 +142,7 @@ public class MyMemoryAnimation extends JPanel {
         int[] ty = {btnCy - 18, btnCy + 18, btnCy};
         g2.fillPolygon(tx, ty, 3);
 
-        // click ripple
+        // วงคลื่นกระเพื่อมจากการคลิก (Click ripple)
         if (t > 0.5f) {
             float rt = clamp((t - 0.5f) / 0.3f, 0, 1);
             int rippleR = (int) (btnR + rt * 35);
@@ -151,7 +151,7 @@ public class MyMemoryAnimation extends JPanel {
             g2.drawOval(btnCx - rippleR, btnCy - rippleR, rippleR * 2, rippleR * 2);
         }
 
-        // cursor: eases in from bottom-left of screen to the button, "presses" on click
+        // เคอร์เซอร์เมาส์: เคลื่อนที่จากมุมซ้ายล่างของจอไปยังปุ่ม และยุบตัวลงเมื่อคลิก
         float moveT = easeInOutQuad(clamp(t / 0.5f, 0, 1));
         float startX = mx + 40, startY = my + mh - 20;
         float curX = lerp(startX, btnCx - 4, moveT);
@@ -163,7 +163,7 @@ public class MyMemoryAnimation extends JPanel {
         g2.setStroke(new BasicStroke(1.2f));
         g2.drawPolygon(buildCursor(curX, curY, pressScale));
 
-        // fade to black — the "cut" into the game
+        // ค่อย ๆ ดับมืด (Fade to black) เพื่อตัดเข้าสู่เกมเพลย์
         if (t > 0.62f) {
             int alpha = (int) (255 * clamp((t - 0.62f) / 0.38f, 0, 1));
             g2.setColor(new Color(0, 0, 0, alpha));
@@ -171,7 +171,7 @@ public class MyMemoryAnimation extends JPanel {
         }
     }
 
-    // ========== SCENE 2 (1.2-3.4s): gameplay -> clear pig -> 3 stars ==========
+    // ========== SCENE 3: เกมเพลย์ -> กำจัดหมู -> แสดงดาว 3 ดวง ==========
     private void drawScene2(Graphics2D g2, float t) {
         g2.setPaint(new GradientPaint(0, 0, new Color(140, 190, 230), 0, H, new Color(210, 230, 240)));
         g2.fillRect(0, 0, W, H);
@@ -193,7 +193,7 @@ public class MyMemoryAnimation extends JPanel {
         };
         int pigX = towerX + 40, pigY = H - groundH - 130;
 
-        float shotT = clamp(t / 0.5f, 0, 1); // shot sequence packed into first half of the scene
+        float shotT = clamp(t / 0.5f, 0, 1); // ลำดับการยิงจัดอยู่ในช่วงครึ่งแรกของฉาก
         float birdX, birdY;
         boolean impactDone = t >= 0.5f;
 
@@ -239,7 +239,7 @@ public class MyMemoryAnimation extends JPanel {
         }
 
         if (shotT < 0.55f) {
-            // pre-impact: draw intact blocks, pig, bird
+            // ก่อนการพุ่งชน: วาดบล็อกไม้ที่ยังสมบูรณ์, หมู, และนก
             g2.setColor(new Color(150, 100, 50));
             for (Rectangle b : blocks) g2.fillRect(b.x, b.y, b.width, b.height);
             g2.setColor(new Color(120, 190, 90));
@@ -248,7 +248,7 @@ public class MyMemoryAnimation extends JPanel {
             g2.fillOval((int) birdX - 14, (int) birdY - 14, 28, 28);
         }
 
-        // "LEVEL COMPLETE" panel + 3 stars, once the shot has landed
+        // ป้าย "LEVEL COMPLETE" + ดาว 3 ดวง เมื่อนกพุ่งชนเป้าหมายแล้ว
         if (impactDone) {
             float panelT = clamp((t - 0.5f) / 0.12f, 0, 1);
             float panelScale = easeOutBack(panelT);
@@ -271,7 +271,7 @@ public class MyMemoryAnimation extends JPanel {
             String title = "LEVEL COMPLETE!";
             gp.drawString(title, -fm.stringWidth(title) / 2, -ph / 2 + 48);
 
-            // stars pop in one by one at fixed points along the scene timeline
+            // ดาวทองค่อย ๆ เด้งป๊อปขึ้นมาทีละดวงตามลำดับเวลา
             float[] starTimes = {0.58f, 0.66f, 0.74f};
             int[] starX = {-70, 0, 70};
             for (int i = 0; i < 3; i++) {
@@ -285,15 +285,15 @@ public class MyMemoryAnimation extends JPanel {
         }
     }
 
-    // ========== SCENE 3 (3.4-5.0s): adult face -> flashback -> child face ==========
+    // ========== SCENE 1: ใบหน้าผู้ใหญ่ -> Flashback ย้อนความทรงจำ -> ใบหน้าวัยเด็ก ==========
     private void drawScene3(Graphics2D g2, float t) {
-        // background shifts from a dim, cool "screen-lit room" to a warm sepia memory tone
+        // สีพื้นหลังเปลี่ยนจากโทนเย็นสลัวในห้อง สู่โทนอุ่นซีเปียแห่งความทรงจำ
         float warm = clamp((t - 0.40f) / 0.40f, 0, 1);
         int br = (int) lerp(28, 235, warm), bgc = (int) lerp(30, 215, warm), bb = (int) lerp(38, 175, warm);
         g2.setColor(new Color(br, bgc, bb));
         g2.fillRect(0, 0, W, H);
 
-        // soft glow behind the face (screen light, later becomes a warm memory glow)
+        // แสงฟุ้งรอบใบหน้า (Radial Glow)
         Point2D glowCenter = new Point2D.Float(W / 2f, H / 2f - 20);
         RadialGradientPaint glow = new RadialGradientPaint(glowCenter, 240,
                 new float[]{0f, 1f},
@@ -308,7 +308,7 @@ public class MyMemoryAnimation extends JPanel {
         if (adultAlpha > 0f) drawFace(g2, W / 2f, H / 2f + 15, 1.25f, false, smile, adultAlpha);
         if (childAlpha > 0f) drawFace(g2, W / 2f, H / 2f + 25, 1.05f, true, 0.6f + 0.4f * smile, childAlpha);
 
-        // memory-flash rings during the crossfade
+        // วงแหวนคลื่นความทรงจำ (Memory rings) ในช่วง Cross-fade
         if (t > 0.40f && t < 0.80f) {
             float rt = (t - 0.40f) / 0.40f;
             for (int i = 0; i < 2; i++) {
@@ -321,7 +321,7 @@ public class MyMemoryAnimation extends JPanel {
             }
         }
 
-        // quick white flash at the very start — the "cut" from gameplay to the player's face
+        // แสงวาบสีขาว (White flash) ตรงจังหวะเริ่มต้น
         if (t < 0.05f) {
             int alpha = (int) (200 * (1 - t / 0.05f));
             g2.setColor(new Color(255, 255, 255, alpha));
